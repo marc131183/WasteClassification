@@ -12,3 +12,6 @@ kill: kill PID
 
 ssh session display image on server:
 export DISPLAY=:0
+
+automatic login:
+https://linuxconfig.org/how-to-enable-automatic-login-on-ubuntu-18-04-bionic-beaver-linux
