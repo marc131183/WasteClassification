@@ -9,3 +9,6 @@ see script running: ps ax | grep cam.py
 see all python scripts: ps -fA | grep python
 
 kill: kill PID
+
+ssh session display image on server:
+export DISPLAY=:0
