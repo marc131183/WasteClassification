@@ -1,31 +1,30 @@
-import serial
-import binascii
-import time
+import sys
+import tkinter
+from PIL import Image, ImageTk
 
-ser = serial.Serial(
-    port='/dev/ttyUSB0',
-    baudrate=19200,
-    parity=serial.PARITY_NONE,
-    stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS
-)
+def showPIL(img):
+	root = tkinter.Tk()
+	w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+	root.overridedirect(1)
+	root.geometry("%dx%d+0+0" % (w, h))
+	root.focus_set()
+	root.bind("<Escape>", lambda e: (e.widget.withdraw(), e.widget.quit()))
+	canvas = tkinter.Canvas(root, width = w, height = h)
+	canvas.pack()
+	canvas.configure(background = "black")
+	imgWidth, imgHeight = img.size
+	if imgWidth > w or imgHeight > h:
+		ratio = min(w/imgWidth, h/imgHeight)
+		imgWidth = int(imgWidth*ratio)
+		imgHeight = int(imgHeight*ratio)
+		img = img.resize((imgWidth,imgHeight), Image.ANTIALIAS)
+	image = ImageTk.PhotoImage(img)
+	imagesprite = canvas.create_image(w/2,h/2,image=image)
+	root.mainloop()
 
-print(ser.isOpen())
 
-turn_on = "02h 00h 00h 00h 00h 02h"
-turn_off = "01h 30h 41h 30h 41h 30h 43h 02h 43h 32h 30h 33h 44h 36h 30h 30h 30h 34h 03h 76h 0Dh"#"02h 01h 00h 00h 00h 03h"
-turn_on_cmd = bytearray([int(elem[:2], 16) for elem in turn_on.split(" ")])
-turn_off_cmd = bytearray([int(elem[:2], 16) for elem in turn_off.split(" ")])
-
-print(turn_on_cmd)
-print(turn_off_cmd)
-
-print(ser.write(turn_off_cmd))
-print(ser.write(turn_off_cmd))
-
-time.sleep(1)
-response = ser.read(1)
-print(response)
-
-ser.close()
+if __name__ == "__main__":
+	FOLDER = "/home/saadjahangir/Code/WasteClassification/"
+	img = cv2.imread(FOLDER + "data/pic.png")
+	
 
