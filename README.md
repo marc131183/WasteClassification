@@ -1,17 +1,22 @@
 # WasteClassification
 
-start python script over ssh, without termination after closing: https://stackoverflow.com/questions/2975624/how-to-run-a-script-in-the-background-even-after-i-logout-ssh
+Start python script over ssh:
 
-start script: nohup ~/Code/WasteClassification/cam.py &
+ssh into remote machine
 
-see script running: ps ax | grep cam.py
+type "tmux" into cmd
 
-see all python scripts: ps -fA | grep python
+export DISPLAY=:0 (to display images on local screen)
 
-kill: kill PID
+start process inside tmux (python3 main.py)
 
-ssh session display image on server:
-export DISPLAY=:0
+leave tmux session by ctrl+b then d
 
-automatic login:
-https://linuxconfig.org/how-to-enable-automatic-login-on-ubuntu-18-04-bionic-beaver-linux
+
+Go back to old tmux session:
+
+tmux attach
+
+See all tmux sessions:
+
+tmux list-sessions
