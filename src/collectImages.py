@@ -8,7 +8,7 @@ import RPi.GPIO as GPIO
 from IO import Camera, ImageViewer
 
 if __name__ == "__main__":
-    FOLDER = ""  # "/home/saadjahangir/Code/WasteClassification/"
+    FOLDER = "/home/saadjahangir/Code/WasteClassification/"
     COUNTDOWN_VALUE = 5  # number of seconds between shots
 
     class_name = input("Enter class name: ")
@@ -22,6 +22,7 @@ if __name__ == "__main__":
     try:
         cam = Camera()
         imgV = ImageViewer()
+        time.sleep(1)
         width, height = imgV.screen_width, imgV.screen_height
 
         remaining = COUNTDOWN_VALUE
