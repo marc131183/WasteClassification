@@ -81,12 +81,19 @@ class Projector:
         self.send_command(b"\x03\x8A\x00\x00\x00\x8D")
 
 
+def stop(e, imgV):
+    e.widget.withdraw()
+    e.widget.quit()
+    imgV.stop_thread = True
+
+
 class ImageViewer:
     def __init__(self) -> None:
         self.thread = None
         self.image_changed = False
         self.image = None
 
+        self.stop_thread = False
         self.thread = threading.Thread(target=self.thread_mainloop, daemon=True)
         self.thread.start()
 
@@ -96,10 +103,8 @@ class ImageViewer:
             root.winfo_screenwidth(),
             root.winfo_screenheight(),
         )
-        root.overrideredirect(1)
-        root.geometry("%dx%d+0+0" % (self.screen_width, self.screen_height))
-        root.focus_set()
-        root.bind("<Escape>", lambda e: (e.widget.withdraw(), e.widget.quit()))
+        root.attributes("-fullscreen", True)
+        root.bind("<Escape>", lambda e: stop(e, self))
         canvas = tkinter.Canvas(
             root, width=self.screen_width, height=self.screen_height
         )
@@ -107,7 +112,7 @@ class ImageViewer:
         canvas.configure(background="white")
         imagesprite = None
 
-        while True:
+        while not self.stop_thread:
             root.update_idletasks()
             root.update()
 

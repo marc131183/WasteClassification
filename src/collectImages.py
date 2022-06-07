@@ -1,6 +1,6 @@
 import os
+import sys
 import time
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 import RPi.GPIO as GPIO
@@ -27,11 +27,10 @@ if __name__ == "__main__":
 
         remaining = COUNTDOWN_VALUE
         font = ImageFont.truetype("DejaVuSans.ttf", 50)
-        while True:
+        while not imgV.stop_thread:
             img = Image.new("RGB", (width, height), (255, 255, 255))
             draw = ImageDraw.Draw(img)
             draw.text((0, 0), str(remaining), font=font, fill=(0, 0, 0))
-            img.show()
             imgV.setImage(img)
             remaining -= 1
             if not remaining:
@@ -41,3 +40,4 @@ if __name__ == "__main__":
             time.sleep(1)
     finally:
         GPIO.cleanup()
+        imgV.stop_thread = True
