@@ -29,10 +29,12 @@ class MotionSensor:
 
 class Camera:
     def __init__(self, width, height) -> None:
+        # does not work for certain resolutions
+        # TODO: look into why that is
         self.width = width
         self.height = height
 
-    def savePicture(self, path: str):
+    def savePicture(self, path: str) -> None:
         cam = cv2.VideoCapture(0)
         cam.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cam.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
@@ -40,7 +42,7 @@ class Camera:
         cam.release()
         cv2.imwrite(path, frame)
 
-    def showPicture(self, milliseconds: int = 3000):
+    def showPicture(self, milliseconds: int = 3000) -> None:
         cam = cv2.VideoCapture(0)
         worked, frame = cam.read()
         cam.release()
