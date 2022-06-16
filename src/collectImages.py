@@ -20,7 +20,7 @@ if __name__ == "__main__":
         index = int(max([elem for elem in os.listdir(save_dir)])[:-4])
 
     try:
-        cam = Camera()
+        cam = Camera(960, 540)
         imgV = ImageViewer()
         time.sleep(1)
         width, height = imgV.screen_width, imgV.screen_height
@@ -34,6 +34,8 @@ if __name__ == "__main__":
             imgV.setImage(img)
             remaining -= 1
             if not remaining:
+                img = Image.new("RGB", (width, height), (255, 255, 255))
+                imgV.setImage(img)
                 remaining = COUNTDOWN_VALUE
                 index += 1
                 cam.savePicture(save_dir + "/{}.png".format(index))
