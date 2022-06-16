@@ -28,8 +28,14 @@ class MotionSensor:
 
 
 class Camera:
+    def __init__(self, width, height) -> None:
+        self.width = width
+        self.height = height
+
     def savePicture(self, path: str):
         cam = cv2.VideoCapture(0)
+        cam.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+        cam.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         worked, frame = cam.read()
         cam.release()
         cv2.imwrite(path, frame)
