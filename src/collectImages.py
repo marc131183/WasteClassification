@@ -37,11 +37,11 @@ if __name__ == "__main__":
             remaining -= 1
             time.sleep(1)
             if not remaining:
-                img = Image.new("RGB", (width, height), (255, 255, 255))
-                imgV.setImage(img)
-                time.sleep(
-                    0.1
-                )  # make sure the image viewer thread gets cpu time to change the image before taking the picture
+                # img = Image.new("RGB", (width, height), (255, 255, 255))
+                # imgV.setImage(img)
+                # time.sleep(
+                #     0.1
+                # )  # make sure the image viewer thread gets cpu time to change the image before taking the picture
                 remaining = COUNTDOWN_VALUE
                 index += 1
                 cam.savePicture(save_dir + "/{}.png".format(index))
