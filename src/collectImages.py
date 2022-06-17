@@ -17,7 +17,7 @@ if __name__ == "__main__":
         os.mkdir(save_dir)
         index = 0
     else:
-        index = int(max([elem for elem in os.listdir(save_dir)])[:-4])
+        index = max([int(elem[:-4]) for elem in os.listdir(save_dir)])
 
     try:
         cam = Camera(1280, 720)
