@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import keyboard
 from PIL import Image, ImageDraw, ImageFont
 
 import RPi.GPIO as GPIO
@@ -9,10 +10,10 @@ from IO import Camera, ImageViewer
 
 if __name__ == "__main__":
     FOLDER = "/home/saadjahangir/Code/WasteClassification/"
-    COUNTDOWN_VALUE = 5  # number of seconds between shots
+    COUNTDOWN_VALUE = 7  # number of seconds between shots
 
     class_name = input("Enter class name: ")
-    save_dir = FOLDER + "data/unlabelled/" + class_name
+    save_dir = FOLDER + "data/unlabeled/" + class_name
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
         index = 0
@@ -29,10 +30,20 @@ if __name__ == "__main__":
 
         remaining = COUNTDOWN_VALUE
         font = ImageFont.truetype("DejaVuSans.ttf", 50)
+        pause = False
+
         while not imgV.stop_thread:
+            if keyboard.is_pressed(' '):
+                pause = True
+            elif keyboard.is_pressed('0'):
+                pause = False
+            if pause:
+                continue
+
             img = Image.new("RGB", (width, height), (255, 255, 255))
             draw = ImageDraw.Draw(img)
-            draw.text((0, 0), str(remaining), font=font, fill=(0, 0, 0))
+            if remaining != 1:
+                draw.text((0, 0), str(remaining-1), font=font, fill=(0, 0, 0))
             imgV.setImage(img)
             remaining -= 1
             time.sleep(1)
@@ -48,3 +59,4 @@ if __name__ == "__main__":
     finally:
         GPIO.cleanup()
         imgV.stop_thread = True
+        os.startfile(save_dir)
