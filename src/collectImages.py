@@ -18,8 +18,11 @@ if __name__ == "__main__":
         os.mkdir(save_dir)
         index = 0
     else:
-        index = max([int(elem[:-4]) for elem in os.listdir(save_dir)])
-
+        try:
+            index = max([int(elem[:-4]) for elem in os.listdir(save_dir)])
+        except (ValueError):
+            index = 0
+        
     try:
         cam = Camera(1280, 720)
         imgV = ImageViewer()
@@ -59,4 +62,4 @@ if __name__ == "__main__":
     finally:
         GPIO.cleanup()
         imgV.stop_thread = True
-        os.startfile(save_dir)
+        os.system('xdg-open "%s"' % save_dir)
