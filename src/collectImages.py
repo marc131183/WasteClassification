@@ -10,7 +10,7 @@ from IO import Camera, ImageViewer
 
 if __name__ == "__main__":
     FOLDER = "/home/saadjahangir/Code/WasteClassification/"
-    COUNTDOWN_VALUE = 7  # number of seconds between shots
+    COUNTDOWN_VALUE = 4  # number of seconds between shots
 
     class_name = input("Enter class name: ")
     save_dir = FOLDER + "data/unlabeled/" + class_name
@@ -36,17 +36,11 @@ if __name__ == "__main__":
         pause = False
 
         while not imgV.stop_thread:
-            if keyboard.is_pressed(' '):
-                pause = True
-            elif keyboard.is_pressed('0'):
-                pause = False
-            if pause:
-                continue
 
             img = Image.new("RGB", (width, height), (255, 255, 255))
             draw = ImageDraw.Draw(img)
-            if remaining != 1:
-                draw.text((0, 0), str(remaining-1), font=font, fill=(0, 0, 0))
+            # if remaining != 1:
+            draw.text((0, 0), str(remaining), font=font, fill=(0, 0, 0))
             imgV.setImage(img)
             remaining -= 1
             time.sleep(1)
