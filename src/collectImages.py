@@ -13,7 +13,7 @@ if __name__ == "__main__":
     COUNTDOWN_VALUE = 4  # number of seconds between shots
 
     class_name = input("Enter class name: ")
-    save_dir = FOLDER + "data/unlabeled/" + class_name
+    save_dir = FOLDER + "data/unlabelled/" + class_name
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
         index = 0
@@ -22,7 +22,7 @@ if __name__ == "__main__":
             index = max([int(elem[:-4]) for elem in os.listdir(save_dir)])
         except (ValueError):
             index = 0
-        
+
     try:
         cam = Camera(1280, 720)
         imgV = ImageViewer()
