@@ -101,8 +101,8 @@ def deleteImages(path: str) -> None:
 
 
 if __name__ == "__main__":
-    folder = "data/unlabelled/7151"
-    deleteImages(folder)
+    folder = "data/unlabelled/7051"
+    # deleteImages(folder)
     updateImageNames(folder)
     # yolo = YoloV5Model("yolov5s.pt")
 
