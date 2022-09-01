@@ -1,14 +1,7 @@
-# file for making the cleaning of images easier
-
 import os
-from turtle import update
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
-import time
 import pygame
+import numpy as np
 from PIL import Image
-from yolov5 import YoloV5Model
 
 
 def updateImageNames(path: str) -> None:
@@ -100,10 +93,29 @@ def deleteImages(path: str) -> None:
             pygame.display.update()
 
 
-if __name__ == "__main__":
-    folder = "data/unlabelled/7051"
-    # deleteImages(folder)
-    updateImageNames(folder)
-    # yolo = YoloV5Model("yolov5s.pt")
+def downsizeImages(
+    folder: str,
+    y_cut_left: int = 50,
+    y_cut_right: int = 50,
+    x_cut_left: int = 200,
+    x_cut_right: int = 100,
+):
+    """downsizes all images in all subfolders of the given folder"""
+    if folder[-1] != "/":
+        folder += "/"
+    for fold in os.listdir(folder):
+        print(fold)
+        total_path = folder + fold + "/"
+        for image_path in os.listdir(total_path):
+            img = np.array(Image.open(total_path + image_path))[
+                y_cut_left:-y_cut_right, x_cut_left:-x_cut_right
+            ]
+            Image.fromarray(img).save(total_path + image_path)
 
-    # print(yolo.classifyImage("data/unlabelled/7051/1.png"))
+
+if __name__ == "__main__":
+    folder = "data/cleaned/7051"
+    # deleteImages(folder)
+    # updateImageNames(folder)
+
+    # downsizeImages("data/cleaned")
