@@ -1,4 +1,5 @@
 import os
+import time
 import pygame
 import numpy as np
 from PIL import Image
@@ -22,10 +23,51 @@ def updateImageNames(path: str) -> None:
             os.rename(path + str(name) + "_temp.png", path + str(i + 1) + ".png")
 
 
+def mergeAllFolders(parent_path_into: str, parent_path_from: str) -> None:
+    """
+    Calls mergeFolders for all pairs of folders with the same name in the given directories
+    """
+    if parent_path_into[-1] != "/":
+        parent_path_into += "/"
+    if parent_path_from[-1] != "/":
+        parent_path_from += "/"
+
+    folders_into = set(os.listdir(parent_path_into))
+    folders_from = set(os.listdir(parent_path_from))
+
+    for sub_folder in folders_into.intersection(folders_from):
+        mergeFolders(parent_path_into + sub_folder, parent_path_from + sub_folder)
+
+
+def mergeFolders(folder_to_merge_into: str, folder_to_merge_from: str) -> None:
+    """
+    Merges the image files of two folders
+    Images from folder_to_merge_into keep their names (1..n)
+    Images from folder_to_merge_from get renamed to (n+1..m) and are moved to the other folder (keeps their order)
+    deletes folder_to_merge_from in the end
+    """
+    if folder_to_merge_into[-1] != "/":
+        folder_to_merge_into += "/"
+    if folder_to_merge_from[-1] != "/":
+        folder_to_merge_from += "/"
+
+    highest_index = max([int(elem[:-4]) for elem in os.listdir(folder_to_merge_into)])
+    names = sorted([int(elem[:-4]) for elem in os.listdir(folder_to_merge_from)])
+
+    for i, name in enumerate(names):
+        os.rename(
+            folder_to_merge_from + str(name) + ".png",
+            folder_to_merge_into + str(highest_index + i + 1) + ".png",
+        )
+
+    os.rmdir(folder_to_merge_from[:-1])
+
+
 def deleteImages(path: str) -> None:
     """
     Input: path to a class folder
     creates an image viewer to make deletion of bad images easier
+    calls updateImagesNames when finished
     controls:
     left/right arrow key: previous/next image
     space: change if image should be deleted
@@ -67,12 +109,17 @@ def deleteImages(path: str) -> None:
             "Yes" if keep_image[current_img] else "No", False, (0, 0, 0)
         )
         display_surface.blit(text_surface, (1350, 200))
+        text_surface = my_font.render(
+            "#total {}".format(len(sorted_image_paths)), False, (0, 0, 0)
+        )
+        display_surface.blit(text_surface, (1280, 400))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 for i, elem in enumerate(keep_image):
                     if not elem:
                         os.remove(sorted_image_paths[i])
                 pygame.quit()
+                updateImageNames(path)
                 quit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
@@ -86,6 +133,7 @@ def deleteImages(path: str) -> None:
                         if not elem:
                             os.remove(sorted_image_paths[i])
                     pygame.quit()
+                    updateImageNames(path)
                     quit()
                 elif event.key == pygame.K_SPACE:
                     keep_image[current_img] = not keep_image[current_img]
@@ -93,7 +141,7 @@ def deleteImages(path: str) -> None:
             pygame.display.update()
 
 
-def downsizeImages(
+def cutImages(
     folder: str,
     y_cut_left: int = 50,
     y_cut_right: int = 50,
@@ -114,8 +162,9 @@ def downsizeImages(
 
 
 if __name__ == "__main__":
-    folder = "data/cleaned/7051"
+    # folder = "data/unlabelled/7042"
     # deleteImages(folder)
     # updateImageNames(folder)
 
-    # downsizeImages("data/cleaned")
+    # cutImages("data/unlabelled")
+    mergeAllFolders("data/cleaned/", "data/unlabelled/")
