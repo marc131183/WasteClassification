@@ -167,5 +167,5 @@ if __name__ == "__main__":
     # updateImageNames(folder)
 
     # cutImages("data/unlabelled")
-    # mergeFolders("data/unlabelled/7025", "data/unlabelled/#7025")
-    mergeAllFolders("data/cleaned/", "data/unlabelled/")
+    mergeFolders("data/unlabelled/7051", "data/unlabelled/7025")
+    # mergeAllFolders("data/cleaned/", "data/unlabelled/")
