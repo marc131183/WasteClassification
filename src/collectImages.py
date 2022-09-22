@@ -1,7 +1,5 @@
 import os
-import sys
 import time
-import keyboard
 from PIL import Image, ImageDraw, ImageFont
 
 import RPi.GPIO as GPIO
@@ -10,7 +8,7 @@ from IO import Camera, ImageViewer
 
 if __name__ == "__main__":
     FOLDER = "/home/saadjahangir/Code/WasteClassification/"
-    COUNTDOWN_VALUE = 4  # number of seconds between shots
+    COUNTDOWN_VALUE = 5  # number of seconds between shots
 
     class_name = input("Enter class name: ")
     save_dir = FOLDER + "data/unlabelled/" + class_name
