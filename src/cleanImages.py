@@ -160,9 +160,31 @@ def cutImages(
             Image.fromarray(img).save(total_path + image_path)
 
 
+def splitIntoTrainTest():
+    path = "data/cleaned/"
+    dest_train = "data/classification/train/"
+    dest_test = "data/classification/val/"
+    split = 0.8  # 80% train, 20% test
+
+    for folder in os.listdir(path):
+        files = os.listdir(path + folder + "/")
+        os.mkdir(dest_train + folder)
+        for file in files[: int(len(files) * split)]:
+            source_path = path + folder + "/" + file
+            dest_path = dest_train + folder + "/" + file
+            os.popen("cp {} {}".format(source_path, dest_path))
+
+        os.mkdir(dest_test + folder)
+        for file in files[int(len(files) * split) :]:
+            source_path = path + folder + "/" + file
+            dest_path = dest_test + folder + "/" + file
+            os.popen("cp {} {}".format(source_path, dest_path))
+
+
 if __name__ == "__main__":
     folder = "data/unlabelled/7133"
-    deleteImages(folder)
+    splitIntoTrainTest()
+    # deleteImages(folder)
     # updateImageNames(folder)
 
     # cutImages("data/unlabelled")
