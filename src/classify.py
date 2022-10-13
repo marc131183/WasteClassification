@@ -1,4 +1,7 @@
 import torch
+import os
+import time
+import numpy as np
 
 from PIL import Image
 from torchvision import transforms
@@ -40,10 +43,33 @@ class ModelManager:
             y_cut_right: int = 50
             x_cut_left: int = 200
             x_cut_right: int = 100
-            img = img[y_cut_left:-y_cut_right, x_cut_left:-x_cut_right]
+            img = Image.fromarray(np.array(img)[y_cut_left:-y_cut_right, x_cut_left:-x_cut_right])
 
-        img = self.data_transform(img)[None, :]
+        img = self.data_transforms(img)[None, :]
         img = img.to(self.device)
         output = self.model(img)
         output = (torch.max(torch.exp(output), 1)[1]).data.cpu().numpy()
-        return self.class_names[output[0]]
+        return self.class_names[output[0]]      
+
+
+if __name__ == "__main__":
+    model = ModelManager()
+    print("finished loading")
+
+    # took 348.688 seconds/ 343.219 seconds/ 329.918 seconds for 3217 images
+    correct = 0
+    total = 0
+    start_time = time.time()
+    directory = "data/cleaned/"
+    for folder in os.listdir(directory):
+        temp_dir = directory + folder + "/"
+        for path in os.listdir(temp_dir):
+            label_pred = model.classifyImage(temp_dir + path, cropped=True)
+            correct += label_pred == folder 
+            total += 1
+        print("finished folder {}".format(folder))
+    print(correct/total)
+    print("--- %s seconds ---" % (time.time() - start_time))
+	
+    # print(model.classifyImage("data/cleaned/7055/2.png", cropped=True))
+    # print(model.classifyImage("data/cleaned/7055/3.png", cropped=True))

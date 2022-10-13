@@ -2,7 +2,7 @@ import os
 import time
 from PIL import Image, ImageDraw, ImageFont
 
-import RPi.GPIO as GPIO #
+import RPi.GPIO as GPIO
 
 from IO import Camera, ImageViewer
 

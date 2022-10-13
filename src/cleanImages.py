@@ -183,8 +183,8 @@ def splitIntoTrainTest():
 
 if __name__ == "__main__":
     folder = "data/unlabelled/7133"
-    splitIntoTrainTest()
-    # deleteImages(folder)
+    # splitIntoTrainTest()
+    deleteImages(folder)
     # updateImageNames(folder)
 
     # cutImages("data/unlabelled")
