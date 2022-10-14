@@ -6,8 +6,6 @@ import numpy as np
 from PIL import Image
 from torchvision import transforms
 
-from IO import Camera
-
 
 class ModelManager:
     def __init__(self) -> None:
@@ -24,7 +22,7 @@ class ModelManager:
             "7152",
         ]
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model = torch.load("data/models/resnet18.pt")
+        self.model = torch.load("data/models/resnet18.pt", map_location=self.device)
         self.model.eval()
         self.data_transforms = transforms.Compose(
             [
@@ -35,21 +33,23 @@ class ModelManager:
             ]
         )
 
-    def classifyImage(self, img_path: str, cropped: bool = False) -> str:
+    def classifyImage(self, img_path: str, crop: bool = False) -> str:
         img = Image.open(img_path)
 
-        if not cropped:
+        if crop:
             y_cut_left: int = 50
             y_cut_right: int = 50
             x_cut_left: int = 200
             x_cut_right: int = 100
-            img = Image.fromarray(np.array(img)[y_cut_left:-y_cut_right, x_cut_left:-x_cut_right])
+            img = Image.fromarray(
+                np.array(img)[y_cut_left:-y_cut_right, x_cut_left:-x_cut_right]
+            )
 
         img = self.data_transforms(img)[None, :]
         img = img.to(self.device)
         output = self.model(img)
         output = (torch.max(torch.exp(output), 1)[1]).data.cpu().numpy()
-        return self.class_names[output[0]]      
+        return self.class_names[output[0]]
 
 
 if __name__ == "__main__":
@@ -65,11 +65,11 @@ if __name__ == "__main__":
         temp_dir = directory + folder + "/"
         for path in os.listdir(temp_dir):
             label_pred = model.classifyImage(temp_dir + path, cropped=True)
-            correct += label_pred == folder 
+            correct += label_pred == folder
             total += 1
         print("finished folder {}".format(folder))
-    print(correct/total)
+    print(correct / total)
     print("--- %s seconds ---" % (time.time() - start_time))
-	
+
     # print(model.classifyImage("data/cleaned/7055/2.png", cropped=True))
     # print(model.classifyImage("data/cleaned/7055/3.png", cropped=True))

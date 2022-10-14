@@ -2,50 +2,39 @@ import os
 import time
 from PIL import Image, ImageDraw, ImageFont
 
-import RPi.GPIO as GPIO
-
 from IO import Camera, ImageViewer
 from classify import ModelManager
 
 if __name__ == "__main__":
-    COUNTDOWN_VALUE = 5
-    try:
-        save_path = "data/sample_image.png"
-        cam = Camera(1280, 720)
-        model = ModelManager()
-        imgV = ImageViewer()
-        time.sleep(
-            1
-        )  # give the image viewer thread cpu, so it can save the width/height of the screen
-        width, height = imgV.screen_width, imgV.screen_height
+    FOLDER = os.getcwd() + "/"
+    COUNTDOWN_VALUE = 3  # number of seconds between shots
 
-        remaining = COUNTDOWN_VALUE
-        font = ImageFont.truetype("DejaVuSans.ttf", 50)
-        pause = False
+    save_path = FOLDER + "data/sample_image.png"
 
-        while not imgV.stop_thread:
+    cam = Camera(1280, 720)
+    model = ModelManager()
+    imgV = ImageViewer()
+    width, height = imgV.screen_width, imgV.screen_height
+
+    remaining = COUNTDOWN_VALUE
+    font = ImageFont.truetype("DejaVuSans.ttf", 50)
+
+    while not imgV.stop:
+        img = Image.new("RGB", (width, height), (255, 255, 255))
+        draw = ImageDraw.Draw(img)
+        draw.text((0, 0), str(remaining), font=font, fill=(0, 0, 0))
+        imgV.setImage(img)
+        remaining -= 1
+        time.sleep(1)
+        if not remaining:
+            img = Image.new("RGB", (width, height), (255, 255, 255))
+            imgV.setImage(img)
+            remaining = COUNTDOWN_VALUE
+            cam.savePicture(save_path)
+            pred_label = model.classifyImage(save_path, crop=True)
+
             img = Image.new("RGB", (width, height), (255, 255, 255))
             draw = ImageDraw.Draw(img)
-            # if remaining != 1:
-            draw.text((0, 0), str(remaining), font=font, fill=(0, 0, 0))
+            draw.text((0, 0), pred_label, font=font, fill=(0, 0, 0))
             imgV.setImage(img)
-            remaining -= 1
-            time.sleep(1)
-            if not remaining:
-                # img = Image.new("RGB", (width, height), (255, 255, 255))
-                # imgV.setImage(img)
-                # time.sleep(
-                #     0.1
-                # )  # make sure the image viewer thread gets cpu time to change the image before taking the picture
-                remaining = COUNTDOWN_VALUE
-                cam.savePicture(save_path)
-                classified_as = model.classifyImage(save_path, cropped = False)
-
-                img = Image.new("RGB", (width, height), (255, 255, 255))
-                draw = ImageDraw.Draw(img)
-                draw.text((0, 0), str(classified_as), font=font, fill=(0, 0, 0))
-                imgV.setImage(img)
-                time.sleep(5)
-    finally:
-        GPIO.cleanup()
-        imgV.stop_thread = True
+            time.sleep(2)

@@ -92,7 +92,7 @@ class Projector:
 def stop(e, imgV):
     e.widget.withdraw()
     e.widget.quit()
-    imgV.stop_thread = True
+    imgV.stop = True
 
 
 class ImageViewer:
@@ -100,38 +100,34 @@ class ImageViewer:
         self.thread = None
         self.image_changed = False
         self.image = None
+        self.stop = False
 
-        self.stop_thread = False
-        self.thread = threading.Thread(target=self.thread_mainloop, daemon=True)
-        self.thread.start()
-
-    def thread_mainloop(self):
-        root = tkinter.Tk()
+        self.root = tkinter.Tk()
         self.screen_width, self.screen_height = (
-            root.winfo_screenwidth(),
-            root.winfo_screenheight(),
+            self.root.winfo_screenwidth(),
+            self.root.winfo_screenheight(),
         )
-        root.attributes("-fullscreen", True)
-        root.bind("<Escape>", lambda e: stop(e, self))
-        canvas = tkinter.Canvas(
-            root, width=self.screen_width, height=self.screen_height
+        self.root.attributes("-fullscreen", True)
+        self.root.bind("<Escape>", lambda e: stop(e, self))
+        self.canvas = tkinter.Canvas(
+            self.root, width=self.screen_width, height=self.screen_height
         )
-        canvas.pack()
-        canvas.configure(background="white")
-        imagesprite = None
+        self.canvas.pack()
+        self.canvas.configure(background="white")
+        self.imagesprite = None
 
-        while not self.stop_thread:
-            root.update_idletasks()
-            root.update()
+    def step(self):
+        if self.image_changed:
+            if self.imagesprite:
+                self.canvas.delete(self.imagesprite)
+            image = ImageTk.PhotoImage(self.image)
+            self.imagesprite = self.canvas.create_image(
+                self.screen_width / 2, self.screen_height / 2, image=image
+            )
+            self.image_changed = False
 
-            if self.image_changed:
-                if imagesprite:
-                    canvas.delete(imagesprite)
-                image = ImageTk.PhotoImage(self.image)
-                imagesprite = canvas.create_image(
-                    self.screen_width / 2, self.screen_height / 2, image=image
-                )
-                self.image_changed = False
+        self.root.update_idletasks()
+        self.root.update()
 
     def setImage(self, img: Image.Image):
         imgWidth, imgHeight = img.size
@@ -144,3 +140,4 @@ class ImageViewer:
 
         self.image = img
         self.image_changed = True
+        self.step()
