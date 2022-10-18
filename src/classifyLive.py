@@ -37,4 +37,6 @@ if __name__ == "__main__":
             draw = ImageDraw.Draw(img)
             draw.text((0, 0), pred_label, font=font, fill=(0, 0, 0))
             imgV.setImage(img)
-            time.sleep(2)
+            for _ in range(20):
+                imgV.setImage(img)
+                time.sleep(0.1)
