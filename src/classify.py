@@ -9,18 +9,7 @@ from torchvision import transforms
 
 class ModelManager:
     def __init__(self) -> None:
-        self.class_names = [
-            "7011",
-            "7023",
-            "7042",
-            "7051",
-            "7055",
-            "7123",
-            "7133",
-            "7134",
-            "7151",
-            "7152",
-        ]
+        self.class_names = ["7042", "7051", "7055", "7133", "other"]
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = torch.load("data/models/resnet18.pt", map_location=self.device)
         self.model.eval()
