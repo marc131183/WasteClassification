@@ -53,7 +53,7 @@ if __name__ == "__main__":
     for folder in os.listdir(directory):
         temp_dir = directory + folder + "/"
         for path in os.listdir(temp_dir):
-            label_pred = model.classifyImage(temp_dir + path, cropped=True)
+            label_pred = model.classifyImage(temp_dir + path, crop=False)
             correct += label_pred == folder
             total += 1
         print("finished folder {}".format(folder))
