@@ -165,28 +165,47 @@ def splitIntoTrainTest():
     dest_train = "data/classification/train/"
     dest_test = "data/classification/val/"
     split = 0.8  # 80% train, 20% test
+    main_classes = ["7133", "7055", "7051", "7042"]
+    i = 0
+    j = 0
+    os.mkdir(dest_train + "others")
+    os.mkdir(dest_test + "others")
 
     for folder in os.listdir(path):
         files = os.listdir(path + folder + "/")
-        os.mkdir(dest_train + folder)
-        for file in files[: int(len(files) * split)]:
-            source_path = path + folder + "/" + file
-            dest_path = dest_train + folder + "/" + file
-            os.popen("cp {} {}".format(source_path, dest_path))
+        files = sorted(files, key=lambda x: int(os.path.basename(x)[:-4]), reverse=True)
+        if folder in main_classes:
+            os.mkdir(dest_train + folder)
+            for file in files[: int(len(files) * split)]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_train + folder + "/" + file
+                os.popen("cp {} {}".format(source_path, dest_path))
 
-        os.mkdir(dest_test + folder)
-        for file in files[int(len(files) * split) :]:
-            source_path = path + folder + "/" + file
-            dest_path = dest_test + folder + "/" + file
-            os.popen("cp {} {}".format(source_path, dest_path))
+            os.mkdir(dest_test + folder)
+            for file in files[int(len(files) * split) :]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_test + folder + "/" + file
+                os.popen("cp {} {}".format(source_path, dest_path))
+        else:
+            for file in files[: int(len(files) * split)]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_train + "others/{}.png".format(i)
+                os.popen("cp {} {}".format(source_path, dest_path))
+                i += 1
+
+            for file in files[int(len(files) * split) :]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_test + "others/{}.png".format(j)
+                os.popen("cp {} {}".format(source_path, dest_path))
+                j += 1
 
 
 if __name__ == "__main__":
     folder = "data/unlabelled/7152"
-    # splitIntoTrainTest()
+    splitIntoTrainTest()
     # deleteImages(folder)
     # updateImageNames(folder)
 
     # cutImages("data/unlabelled")
     # mergeFolders("data/unlabelled/7051", "data/unlabelled/7025")
-    mergeAllFolders("data/cleaned/", "data/unlabelled/")
+    # mergeAllFolders("data/cleaned/", "data/unlabelled/")
