@@ -1,6 +1,9 @@
 import os
 import pygame
+import shutil
 import numpy as np
+
+from sklearn.model_selection import StratifiedKFold
 from PIL import Image
 
 
@@ -162,14 +165,14 @@ def cutImages(
 
 def splitIntoTrainTest():
     path = "data/cleaned/"
-    dest_train = "data/classification/train/"
+    dest_train = "data/classification/all/"
     dest_test = "data/classification/val/"
-    split = 0.8  # 80% train, 20% test
+    split = 1  # 80% train, 20% test
     main_classes = ["7133", "7055", "7051", "7042"]
     i = 0
     j = 0
     os.mkdir(dest_train + "others")
-    os.mkdir(dest_test + "others")
+    # os.mkdir(dest_test + "others")
 
     for folder in os.listdir(path):
         files = os.listdir(path + folder + "/")
@@ -179,30 +182,67 @@ def splitIntoTrainTest():
             for file in files[: int(len(files) * split)]:
                 source_path = path + folder + "/" + file
                 dest_path = dest_train + folder + "/" + file
-                os.popen("cp {} {}".format(source_path, dest_path))
+                shutil.copy(source_path, dest_path)
 
-            os.mkdir(dest_test + folder)
+            # os.mkdir(dest_test + folder)
             for file in files[int(len(files) * split) :]:
                 source_path = path + folder + "/" + file
                 dest_path = dest_test + folder + "/" + file
-                os.popen("cp {} {}".format(source_path, dest_path))
+                shutil.copy(source_path, dest_path)
         else:
             for file in files[: int(len(files) * split)]:
                 source_path = path + folder + "/" + file
                 dest_path = dest_train + "others/{}.png".format(i)
-                os.popen("cp {} {}".format(source_path, dest_path))
+                shutil.copy(source_path, dest_path)
                 i += 1
 
             for file in files[int(len(files) * split) :]:
                 source_path = path + folder + "/" + file
                 dest_path = dest_test + "others/{}.png".format(j)
-                os.popen("cp {} {}".format(source_path, dest_path))
+                shutil.copy(source_path, dest_path)
                 j += 1
+
+def createKFoldSplit(number_of_folds = 5):
+    source = "data/cleaned/"
+    target = "data/classification/"
+    main_classes = ["7133", "7055", "7051", "7042"]
+    kf = StratifiedKFold(n_splits = number_of_folds)
+
+    paths = []
+    labels = []
+    for folder in os.listdir(source):
+        temp_path = source + folder + "/"
+        files = sorted(os.listdir(temp_path), key = lambda x: int(os.path.basename(x)[:-4]))
+        paths.extend([temp_path + elem for elem in files])
+        if folder in main_classes:
+            labels.extend([main_classes.index(folder)] * len(files))
+        else:
+            labels.extend([len(main_classes)] * len(files))
+
+    main_classes.append("others")
+
+    os.mkdir(target + "kFold_" + str(number_of_folds))
+    for i, (train_index, test_index) in enumerate(kf.split(paths, labels)):
+        temp_path = target + "kFold_" + str(number_of_folds) + "/" + "fold_" + str(i)
+        os.mkdir(temp_path)
+
+        os.mkdir(temp_path + "/train")
+        os.mkdir(temp_path + "/test") 
+        for elem in main_classes:
+            os.mkdir(temp_path + "/train/" + str(elem))
+            os.mkdir(temp_path + "/test/" + str(elem))
+
+        for phase in ["train", "test"]:
+            for j, index in enumerate(train_index if phase == "train" else test_index):
+                source_path = paths[index]
+                dest_path = temp_path + "/{}/".format(phase) + main_classes[labels[index]] + "/{}.png".format(j)
+                shutil.copy(source_path, dest_path)
 
 
 if __name__ == "__main__":
     folder = "data/unlabelled/7152"
-    splitIntoTrainTest()
+    createKFoldSplit()
+    # splitIntoTrainTest()
     # deleteImages(folder)
     # updateImageNames(folder)
 
