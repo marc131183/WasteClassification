@@ -39,8 +39,9 @@ def stratifiedKFold(y, number_of_folds):
 
 
 def createKFoldSplit(number_of_folds=5):
-    source = "data/cleaned/"
-    target = "data/classification/"
+    dir = os.getcwd() + "/WasteClassification/"
+    source = dir + "data/cleaned/"
+    target = dir + "data/classification/"
     main_classes = os.listdir(source)  # ["7133", "7055", "7051", "7042"]
 
     paths = []
