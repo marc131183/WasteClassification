@@ -15,6 +15,14 @@ from crossValidation import (
 
 
 if __name__ == "__main__":
+    model_type = "resnet18"
+    if model_type == "resnet18":
+        save_dir = os.getcwd() + "/WasteClassification/data/models/resnet18.pt"
+        init_function = resnet18
+    elif model_type == "resnet50":
+        save_dir = os.getcwd() + "/WasteClassification/data/models/resnet50.pt"
+        init_function = resnet50
+
     data_dir = os.getcwd() + "/WasteClassification/data/all"
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -28,5 +36,7 @@ if __name__ == "__main__":
     }
 
     model = train_model_optional_validation(
-        *resnet18(), data_loaders, dataset_sizes, device, max_epochs=NUM_EPOCHS
+        *init_function(), data_loaders, dataset_sizes, device, max_epochs=NUM_EPOCHS
     )
+
+    torch.save(model, save_dir)
