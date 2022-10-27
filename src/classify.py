@@ -11,7 +11,9 @@ class ModelManager:
     def __init__(self) -> None:
         self.class_names = ["7042", "7051", "7055", "7133", "other"]
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model = torch.load("data/models/resnet18.pt", map_location=self.device)
+        self.model = torch.load(
+            "data/models/models_new/resnet18.pt", map_location=self.device
+        )
         self.model.eval()
         self.data_transforms = transforms.Compose(
             [
@@ -54,7 +56,9 @@ if __name__ == "__main__":
         temp_dir = directory + folder + "/"
         for path in os.listdir(temp_dir):
             label_pred = model.classifyImage(temp_dir + path, crop=False)
-            correct += label_pred == folder
+            correct += label_pred == (
+                folder if folder in ["7133", "7055", "7051", "7042"] else "others"
+            )
             total += 1
         print("finished folder {}".format(folder))
     print(correct / total)

@@ -11,6 +11,7 @@ from crossValidation import (
     DATA_TRANSFORMS,
     BATCH_SIZE,
     NUM_EPOCHS,
+    NUM_CLASSES,
 )
 
 
@@ -37,7 +38,11 @@ if __name__ == "__main__":
 
     print("-" * 15, "Start training {} model".format(model_type), "-" * 15)
     model = train_model_optional_validation(
-        *init_function(), data_loaders, dataset_sizes, device, max_epochs=NUM_EPOCHS
+        *init_function(NUM_CLASSES, device),
+        data_loaders,
+        dataset_sizes,
+        device,
+        max_epochs=NUM_EPOCHS
     )
 
     torch.save(model, save_dir)

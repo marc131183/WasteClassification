@@ -13,7 +13,7 @@ from torchvision import models, transforms, datasets
 
 # define parameters
 NUM_CLASSES = 5
-NUM_EPOCHS = 15
+NUM_EPOCHS = 25
 NUMBER_OF_FOLDS = 10
 BATCH_SIZE = 4
 
@@ -279,7 +279,7 @@ def train_model(
     return model
 
 
-def resnet18(num_classes):
+def resnet18(num_classes, device):
     model = models.resnet18(pretrained=True)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, num_classes)
@@ -297,7 +297,7 @@ def resnet18(num_classes):
     return model, criterion, optimizer, exp_lr_scheduler
 
 
-def resnet50(num_classes):
+def resnet50(num_classes, device):
     model = models.resnet50(pretrained=True)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, num_classes)
@@ -319,7 +319,7 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     accuracy = crossValidateModel(
-        lambda: resnet50(NUM_CLASSES),
+        lambda: resnet50(NUM_CLASSES, device),
         lambda a, b, c, d, e, f: train_model(
             a, b, c, d, e, f, device, num_epochs=NUM_EPOCHS
         ),
