@@ -11,6 +11,34 @@ from torch import nn, optim
 from torchvision import models, transforms, datasets
 
 
+# define parameters
+NUM_CLASSES = 5
+NUM_EPOCHS = 15
+NUMBER_OF_FOLDS = 10
+BATCH_SIZE = 4
+
+DATA_TRANSFORMS = {
+    "train": transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.RandomRotation(degrees=180),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    ),
+    "test": transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    ),
+}
+
+
 def evaluate_model(model, data_loaders, device):
     y_pred = []
     y_true = []
@@ -45,13 +73,13 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
         temp_dir = base_dir + "fold_{}".format(i)
 
         image_datasets = {
-            x: datasets.ImageFolder(os.path.join(temp_dir, x), data_transforms[x])
+            x: datasets.ImageFolder(os.path.join(temp_dir, x), DATA_TRANSFORMS[x])
             for x in ["train", "test"]
         }
         dataset_sizes = {x: len(image_datasets[x]) for x in ["train", "test"]}
         data_loaders = {
             x: torch.utils.data.DataLoader(
-                image_datasets[x], batch_size=batch_size, shuffle=True, num_workers=10
+                image_datasets[x], batch_size=BATCH_SIZE, shuffle=True, num_workers=10
             )
             for x in ["train", "test"]
         }
@@ -288,42 +316,15 @@ def resnet50(num_classes):
 
 
 if __name__ == "__main__":
-    # define parameters
-    num_classes = 5
-    num_epochs = 15
-    number_of_folds = 10
-    batch_size = 4
-
-    data_transforms = {
-        "train": transforms.Compose(
-            [
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.RandomRotation(degrees=180),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        ),
-        "test": transforms.Compose(
-            [
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        ),
-    }
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     accuracy = crossValidateModel(
-        lambda: resnet50(num_classes),
+        lambda: resnet50(NUM_CLASSES),
         lambda a, b, c, d, e, f: train_model(
-            a, b, c, d, e, f, device, num_epochs=num_epochs
+            a, b, c, d, e, f, device, num_epochs=NUM_EPOCHS
         ),
         device,
-        number_of_folds,
+        NUMBER_OF_FOLDS,
     )
     print("accuracy", accuracy)
     print("mean accuracy", sum(accuracy) / len(accuracy))

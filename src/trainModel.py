@@ -1,0 +1,32 @@
+import os
+import torch
+
+from torchvision import datasets
+
+
+from crossValidation import (
+    train_model_optional_validation,
+    resnet18,
+    resnet50,
+    DATA_TRANSFORMS,
+    BATCH_SIZE,
+    NUM_EPOCHS,
+)
+
+
+if __name__ == "__main__":
+    data_dir = os.getcwd() + "/WasteClassification/data/all"
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    image_datasets = datasets.ImageFolder(data_dir, DATA_TRANSFORMS["train"])
+    dataset_sizes = {x: len(image_datasets) for x in ["train"]}
+    data_loaders = {
+        x: torch.utils.data.DataLoader(
+            image_datasets[x], batch_size=BATCH_SIZE, shuffle=True, num_workers=10
+        )
+        for x in ["train"]
+    }
+
+    model = train_model_optional_validation(
+        *resnet18(), data_loaders, dataset_sizes, device, max_epochs=NUM_EPOCHS
+    )

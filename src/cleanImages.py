@@ -3,7 +3,6 @@ import pygame
 import shutil
 import numpy as np
 
-from sklearn.model_selection import StratifiedKFold
 from PIL import Image
 
 
