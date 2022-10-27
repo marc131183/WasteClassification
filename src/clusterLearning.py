@@ -1,7 +1,11 @@
 import os
 import torch
+import numpy as np
 import time
 import copy
+
+np.random.seed(42)
+torch.manual_seed(42)
 
 from torch import nn, optim
 from torchvision import models, transforms, datasets
@@ -25,15 +29,19 @@ def evaluate_model(model, data_loaders, device):
             labels = labels.data.cpu().numpy()
             y_true.extend(labels)  # Save Truth
 
-    return sum(y_true == y_pred) / len(y_true)
+    return sum([x == y for x, y in zip(y_true, y_pred)]) / len(y_true)
 
 
 def crossValidateModel(init_function, train_function, device, number_of_folds):
     all_acc = []
 
-    base_dir = "data/classification/kFold_{}/".format(number_of_folds)
+    base_dir = (
+        os.getcwd()
+        + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
+    )
 
     for i in range(number_of_folds):
+        print("-" * 15, "Started working on Fold {}".format(i + 1), "-" * 15)
         temp_dir = base_dir + "fold_{}".format(i)
 
         image_datasets = {
@@ -43,7 +51,7 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
         dataset_sizes = {x: len(image_datasets[x]) for x in ["train", "test"]}
         data_loaders = {
             x: torch.utils.data.DataLoader(
-                image_datasets[x], batch_size=batch_size, shuffle=True, num_workers=6
+                image_datasets[x], batch_size=batch_size, shuffle=True, num_workers=10
             )
             for x in ["train", "test"]
         }
@@ -53,6 +61,118 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
         all_acc.append(evaluate_model(model, data_loaders, device))
 
     return all_acc
+
+
+def train_model_optional_validation(
+    model,
+    criterion,
+    optimizer,
+    scheduler,
+    data_loaders,
+    dataset_sizes,
+    device,
+    early_stopping_subset_ratio=0.1,
+    early_stopping_tolerance=5,
+    max_epochs=25,
+):
+    since = time.time()
+
+    best_model_wts = copy.deepcopy(model.state_dict())
+    best_loss = np.inf
+
+    phases = ["train"]
+    if "test" in data_loaders:
+        phases.append("test")
+
+    # select subset of batches of training data to do early stopping on
+    early_stopping_subset_indices = np.arange(len(data_loaders["train"]))
+    np.random.shuffle(early_stopping_subset_indices)
+    early_stopping_subset_indices = early_stopping_subset_indices[
+        : int(len(early_stopping_subset_indices) * early_stopping_subset_ratio)
+    ]
+    is_part_of_indices = np.zeros((len(data_loaders["train"])), dtype=bool)
+    is_part_of_indices[early_stopping_subset_indices] = True
+    no_improvement_since = 0
+
+    for epoch in range(max_epochs):
+        print(f"Epoch {epoch+1}/{max_epochs}")
+        print("-" * 10)
+
+        # Each epoch has a training and testing phase
+        for phase in phases:
+            if phase == "train":
+                model.train()  # Set model to training mode
+            else:
+                model.eval()  # Set model to evaluate mode
+
+            running_loss = 0.0
+            running_corrects = 0
+            subset_running_loss = 0.0
+
+            # Iterate over data.
+            for i, (inputs, labels) in enumerate(data_loaders[phase]):
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+
+                # zero the parameter gradients
+                optimizer.zero_grad()
+
+                # forward
+                # track history if only in train
+                with torch.set_grad_enabled(phase == "train"):
+                    outputs = model(inputs)
+                    _, preds = torch.max(outputs, 1)
+                    loss = criterion(outputs, labels)
+
+                    # backward + optimize only if in training phase
+                    if phase == "train":
+                        loss.backward()
+                        optimizer.step()
+
+                # statistics
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
+                if phase == "train" and is_part_of_indices[i]:
+                    subset_running_loss += loss.item() * inputs.size(0)
+            if phase == "train":
+                scheduler.step()
+
+            epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+            if phase == "train":
+                subset_running_loss = subset_running_loss / len(
+                    early_stopping_subset_indices
+                )
+                print(f"Subset loss : {subset_running_loss:.4f}")
+
+            print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
+
+            if phase == "train":
+                no_improvement_since += 1
+
+                if subset_running_loss < best_loss:
+                    best_loss = subset_running_loss
+                    no_improvement_since = 0
+                    # deep copy the model
+                    best_model_wts = copy.deepcopy(model.state_dict())
+
+                if no_improvement_since > early_stopping_tolerance:
+                    print("-" * 5, "Early stopping", "-" * 5)
+                    time_elapsed = time.time() - since
+                    print(
+                        f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s"
+                    )
+                    model.load_state_dict(best_model_wts)
+                    return model
+
+        print()
+
+    time_elapsed = time.time() - since
+    print(f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
+
+    # load best model weights
+    model.load_state_dict(best_model_wts)
+    return model
 
 
 def train_model(
@@ -131,8 +251,26 @@ def train_model(
     return model
 
 
-def resnet18():
-    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+def resnet18(num_classes):
+    model = models.resnet18(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, num_classes)
+
+    model = model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+
+    # Observe that all parameters are being optimized
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+
+    # Decay LR by a factor of 0.1 every 7 epochs
+    exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+
+    return model, criterion, optimizer, exp_lr_scheduler
+
+
+def resnet50(num_classes):
+    model = models.resnet50(pretrained=True)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, num_classes)
 
@@ -180,7 +318,7 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     accuracy = crossValidateModel(
-        resnet18,
+        lambda: resnet50(num_classes),
         lambda a, b, c, d, e, f: train_model(
             a, b, c, d, e, f, device, num_epochs=num_epochs
         ),
