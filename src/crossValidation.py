@@ -103,7 +103,7 @@ def train_model_optional_validation(
     device,
     early_stopping_subset_ratio=0.1,
     early_stopping_tolerance=5,
-    max_epochs=25,
+    num_epochs=25,
 ):
     since = time.time()
 
@@ -124,8 +124,8 @@ def train_model_optional_validation(
     is_part_of_indices[early_stopping_subset_indices] = True
     no_improvement_since = 0
 
-    for epoch in range(max_epochs):
-        print(f"Epoch {epoch+1}/{max_epochs}")
+    for epoch in range(num_epochs):
+        print(f"Epoch {epoch+1}/{num_epochs}")
         print("-" * 10)
 
         # Each epoch has a training and testing phase
