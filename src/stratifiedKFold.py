@@ -42,20 +42,17 @@ def createKFoldSplit(number_of_folds=5):
     dir = os.getcwd() + "/WasteClassification/"
     source = dir + "data/cleaned/"
     target = dir + "data/classification/"
-    main_classes = os.listdir(source)  # ["7133", "7055", "7051", "7042"]
+    main_classes = os.listdir(source)
 
     paths = []
     labels = []
-    for folder in os.listdir(source):
+    for i, folder in enumerate(main_classes):
         temp_path = source + folder + "/"
         files = sorted(
             os.listdir(temp_path), key=lambda x: int(os.path.basename(x)[:-4])
         )
         paths.extend([temp_path + elem for elem in files])
-        if folder in main_classes:
-            labels.extend([main_classes.index(folder)] * len(files))
-        else:
-            labels.extend([len(main_classes)] * len(files))
+        labels.extend([i] * len(files))
 
     main_classes = [
         elem

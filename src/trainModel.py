@@ -6,8 +6,7 @@ from torchvision import datasets
 
 from crossValidation import (
     train_model_optional_validation,
-    resnet18,
-    resnet50,
+    model_init_function,
     DATA_TRANSFORMS,
     BATCH_SIZE,
     NUM_EPOCHS,
@@ -17,12 +16,12 @@ from crossValidation import (
 
 if __name__ == "__main__":
     model_type = "resnet18"
-    if model_type == "resnet18":
-        save_dir = os.getcwd() + "/WasteClassification/data/models/resnet18.pt"
-        init_function = resnet18
-    elif model_type == "resnet50":
-        save_dir = os.getcwd() + "/WasteClassification/data/models/resnet50.pt"
-        init_function = resnet50
+    feature_extractor = False
+    save_dir = (
+        os.getcwd() + "/WasteClassification/data/models/" + model_type + "_feat"
+        if feature_extractor
+        else "" + ".pt"
+    )
 
     data_dir = os.getcwd() + "/WasteClassification/data/classification/all"
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -38,7 +37,9 @@ if __name__ == "__main__":
 
     print("-" * 15, "Start training {} model".format(model_type), "-" * 15)
     model = train_model_optional_validation(
-        *init_function(NUM_CLASSES, device),
+        *model_init_function(
+            model_type, [], NUM_CLASSES, device, feature_extractor=False
+        ),
         data_loaders,
         dataset_sizes,
         device,

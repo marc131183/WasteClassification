@@ -9,7 +9,7 @@ from torchvision import transforms
 
 class ModelManager:
     def __init__(self) -> None:
-        self.class_names = ["7042", "7051", "7055", "7133", "other"]
+        self.class_names = ["7042", "7051", "7055", "7133", "others"]
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = torch.load(
             "data/models/models_new/resnet18.pt", map_location=self.device
@@ -39,7 +39,7 @@ class ModelManager:
         img = self.data_transforms(img)[None, :]
         img = img.to(self.device)
         output = self.model(img)
-        output = (torch.max(torch.exp(output), 1)[1]).data.cpu().numpy()
+        output = (torch.max(output, 1))[1].data.cpu().numpy()
         return self.class_names[output[0]]
 
 

@@ -63,10 +63,12 @@ def evaluate_model(model, data_loaders, device):
 def crossValidateModel(init_function, train_function, device, number_of_folds):
     all_acc = []
 
-    base_dir = (
-        os.getcwd()
-        + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
-    )
+    # base_dir = (
+    #     os.getcwd()
+    #     + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
+    # )
+
+    base_dir = "data/classification/kFold_{}/".format(number_of_folds)
 
     for i in range(number_of_folds):
         print("-" * 15, "Started working on Fold {}".format(i + 1), "-" * 15)
@@ -279,35 +281,51 @@ def train_model(
     return model
 
 
-def resnet18(num_classes, device):
-    model = models.resnet18(pretrained=True)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, num_classes)
+def model_init_function(
+    model_architecture,
+    final_layers,
+    final_layers_in,
+    device,
+    feature_extractor=False,
+    learn_rate=0.001,
+    momentum=0.9,
+):
+    available_architectures = {
+        "resnet18": models.resnet18,
+        "resnet50": models.resnet50,
+        "alexnet": models.alexnet,
+        "vgg": models.vgg11,
+    }
 
+    class CustomModel(nn.Module):
+        def __init__(self) -> None:
+            super(CustomModel, self).__init__()
+            self.pretrained_part = available_architectures[model_architecture](
+                pretrained=True
+            )
+            self.custom_part = nn.Sequential(
+                nn.Linear(
+                    self.pretrained_part.fc.out_features,
+                    final_layers_in,
+                ),
+                *final_layers,
+            )
+
+        def forward(self, x):
+            x = self.pretrained_part(x)
+            x = self.custom_part(x)
+            return x
+
+    model = CustomModel()
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()
 
-    # Observe that all parameters are being optimized
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
-    # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
-
-    return model, criterion, optimizer, exp_lr_scheduler
-
-
-def resnet50(num_classes, device):
-    model = models.resnet50(pretrained=True)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, num_classes)
-
-    model = model.to(device)
-
-    criterion = nn.CrossEntropyLoss()
-
-    # Observe that all parameters are being optimized
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(
+        model.custom_part.parameters() if feature_extractor else model.parameters(),
+        lr=learn_rate,
+        momentum=momentum,
+    )
 
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
@@ -319,7 +337,13 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     accuracy = crossValidateModel(
-        lambda: resnet50(NUM_CLASSES, device),
+        lambda: model_init_function(
+            "resnet18",
+            [nn.ReLU(), nn.Linear(80, NUM_CLASSES)],
+            80,
+            device,
+            feature_extractor=False,
+        ),
         lambda a, b, c, d, e, f: train_model(
             a, b, c, d, e, f, device, num_epochs=NUM_EPOCHS
         ),
