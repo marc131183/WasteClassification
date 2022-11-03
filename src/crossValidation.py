@@ -63,12 +63,12 @@ def evaluate_model(model, data_loaders, device):
 def crossValidateModel(init_function, train_function, device, number_of_folds):
     all_acc = []
 
-    # base_dir = (
-    #     os.getcwd()
-    #     + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
-    # )
+    base_dir = (
+        os.getcwd()
+        + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
+    )
 
-    base_dir = "data/classification/kFold_{}/".format(number_of_folds)
+    # base_dir = "data/classification/kFold_{}/".format(number_of_folds)
 
     for i in range(number_of_folds):
         print("-" * 15, "Started working on Fold {}".format(i + 1), "-" * 15)
@@ -305,7 +305,7 @@ def model_init_function(
             )
             self.custom_part = nn.Sequential(
                 nn.Linear(
-                    self.pretrained_part.fc.out_features,
+                    self.pretrained_part.classifier[-1].out_features,
                     final_layers_in,
                 ),
                 *final_layers,
@@ -338,7 +338,7 @@ if __name__ == "__main__":
 
     accuracy = crossValidateModel(
         lambda: model_init_function(
-            "resnet18",
+            "vgg",
             [nn.ReLU(), nn.Linear(80, NUM_CLASSES)],
             80,
             device,
