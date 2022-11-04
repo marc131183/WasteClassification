@@ -63,12 +63,12 @@ def evaluate_model(model, data_loaders, device):
 def crossValidateModel(init_function, train_function, device, number_of_folds):
     all_acc = []
 
-    base_dir = (
-        os.getcwd()
-        + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
-    )
+    # base_dir = (
+    #     os.getcwd()
+    #     + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
+    # )
 
-    # base_dir = "data/classification/kFold_{}/".format(number_of_folds)
+    base_dir = "data/classification/kFold_{}/".format(number_of_folds)
 
     for i in range(number_of_folds):
         print("-" * 15, "Started working on Fold {}".format(i + 1), "-" * 15)
@@ -300,27 +300,24 @@ def model_init_function(
     class CustomModel(nn.Module):
         def __init__(self) -> None:
             super(CustomModel, self).__init__()
-            self.pretrained_part = available_architectures[model_architecture](
-                pretrained=True
-            )
-            # remove last layer (classification layer) from pretrained model
-            self.pretrained_part = nn.Sequential(
-                *[
-                    self.pretrained_part.classifier[i]
-                    for i in range(len(self.pretrained_part.classifier) - 1)
-                ]
-            )
-            self.custom_part = nn.Sequential(
-                nn.Linear(
-                    self.pretrained_part.classifier[-1].out_features,
-                    final_layers_in,
-                ),
-                *final_layers,
-            )
+
+            self.network = available_architectures[model_architecture](pretrained=True)
+            if feature_extractor:
+                for param in self.network.parameters():
+                    param.requires_grad = False
+            if "resnet" in model_architecture:
+                self.network.fc = nn.Sequential(
+                    nn.Linear(self.network.fc.in_features, final_layers_in),
+                    *final_layers,
+                )
+            elif "alexnet" in model_architecture or "vgg" in model_architecture:
+                self.network.classifier[-1] = nn.Sequential(
+                    nn.Linear(self.network.classifier[-1].in_features, final_layers_in),
+                    *final_layers,
+                )
 
         def forward(self, x):
-            x = self.pretrained_part(x)
-            x = self.custom_part(x)
+            x = self.network(x)
             return x
 
     model = CustomModel()
@@ -329,7 +326,7 @@ def model_init_function(
     criterion = nn.CrossEntropyLoss()
 
     optimizer = optim.SGD(
-        model.custom_part.parameters() if feature_extractor else model.parameters(),
+        model.parameters(),
         lr=learn_rate,
         momentum=momentum,
     )
@@ -345,9 +342,9 @@ if __name__ == "__main__":
 
     accuracy = crossValidateModel(
         lambda: model_init_function(
-            "vgg",
-            [nn.ReLU(), nn.Linear(80, NUM_CLASSES)],
-            80,
+            "alexnet",
+            [],
+            NUM_CLASSES,
             device,
             feature_extractor=False,
         ),
