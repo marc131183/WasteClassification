@@ -303,6 +303,13 @@ def model_init_function(
             self.pretrained_part = available_architectures[model_architecture](
                 pretrained=True
             )
+            # remove last layer (classification layer) from pretrained model
+            self.pretrained_part = nn.Sequential(
+                *[
+                    self.pretrained_part.classifier[i]
+                    for i in range(len(self.pretrained_part.classifier) - 1)
+                ]
+            )
             self.custom_part = nn.Sequential(
                 nn.Linear(
                     self.pretrained_part.classifier[-1].out_features,

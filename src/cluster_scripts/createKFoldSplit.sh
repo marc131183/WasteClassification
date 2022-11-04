@@ -7,7 +7,7 @@
 #SBATCH --time=00:15:00
 #SBATCH --output=stratifiedKFold.log
 #SBATCH --mail-user=<marcgro@stud.ntnu.no>
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=END
 
 module purge
 

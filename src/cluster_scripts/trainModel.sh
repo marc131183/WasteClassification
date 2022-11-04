@@ -10,7 +10,7 @@
 #SBATCH --time=04:00:00
 #SBATCH --output=trainModel_resnet18.log
 #SBATCH --mail-user=<marcgro@stud.ntnu.no>
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=END
 
 module purge
 module load torchvision/0.8.2-fosscuda-2020b-PyTorch-1.7.1
