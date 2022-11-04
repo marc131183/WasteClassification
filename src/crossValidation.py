@@ -39,6 +39,16 @@ DATA_TRANSFORMS = {
 }
 
 
+def compute_confusion_matrix(y_true, y_pred):
+    num_classes = max(len(np.unique(y_true)), len(np.unique(y_pred)))
+    confusion_matrix = np.zeros((num_classes, num_classes))
+
+    for x, y in zip(y_true, y_pred):
+        confusion_matrix[x, y] += 1
+
+    return confusion_matrix
+
+
 def evaluate_model(model, data_loaders, device):
     y_pred = []
     y_true = []
@@ -57,7 +67,9 @@ def evaluate_model(model, data_loaders, device):
             labels = labels.data.cpu().numpy()
             y_true.extend(labels)  # Save Truth
 
-    return sum([x == y for x, y in zip(y_true, y_pred)]) / len(y_true)
+    return sum([x == y for x, y in zip(y_true, y_pred)]) / len(
+        y_true
+    ), compute_confusion_matrix(y_true, y_pred)
 
 
 def crossValidateModel(init_function, train_function, device, number_of_folds):
@@ -69,6 +81,9 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
     # )
 
     base_dir = "data/classification/kFold_{}/".format(number_of_folds)
+
+    confusion_matrix = None
+    conf_initialized = False
 
     for i in range(number_of_folds):
         print("-" * 15, "Started working on Fold {}".format(i + 1), "-" * 15)
@@ -88,9 +103,16 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
 
         model = train_function(*init_function(), data_loaders, dataset_sizes)
 
-        all_acc.append(evaluate_model(model, data_loaders, device))
+        acc, conf = evaluate_model(model, data_loaders, device)
 
-    return all_acc
+        all_acc.append(acc)
+        if conf_initialized:
+            confusion_matrix = confusion_matrix + conf
+        else:
+            confusion_matrix = conf
+            conf_initialized = True
+
+    return all_acc, confusion_matrix
 
 
 def train_model_optional_validation(
@@ -340,19 +362,23 @@ def model_init_function(
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    accuracy = crossValidateModel(
+    accuracy, confusion_matrix = crossValidateModel(
         lambda: model_init_function(
             "alexnet",
-            [],
-            NUM_CLASSES,
+            [nn.ReLU(), nn.Linear(100, NUM_CLASSES)],
+            100,
             device,
-            feature_extractor=False,
+            feature_extractor=True,
         ),
-        lambda a, b, c, d, e, f: train_model(
+        lambda a, b, c, d, e, f: train_model_optional_validation(
             a, b, c, d, e, f, device, num_epochs=NUM_EPOCHS
         ),
         device,
         NUMBER_OF_FOLDS,
     )
+    print("-" * 30)
     print("accuracy", accuracy)
-    print("mean accuracy", sum(accuracy) / len(accuracy))
+    print("mean accuracy", np.mean(accuracy))
+    print("stddev accuracy", np.std(accuracy))
+    print("confusion matrix")
+    print(confusion_matrix)
