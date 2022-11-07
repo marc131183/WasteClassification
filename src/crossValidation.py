@@ -146,6 +146,10 @@ def train_model_optional_validation(
     is_part_of_indices[early_stopping_subset_indices] = True
     no_improvement_since = 0
 
+    loss_all = []
+    acc_all = []
+    loss_subset = []
+
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}")
         print("-" * 10)
@@ -200,6 +204,10 @@ def train_model_optional_validation(
             print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
             if phase == "train":
+                loss_all.append(epoch_loss)
+                acc_all.append(epoch_acc)
+                loss_subset.append(subset_running_loss)
+
                 no_improvement_since += 1
 
                 if subset_running_loss < best_loss:
@@ -221,6 +229,13 @@ def train_model_optional_validation(
 
     time_elapsed = time.time() - since
     print(f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
+
+    print("Loss for all training data")
+    print(loss_all)
+    print("Accuracy for all training data")
+    print(acc_all)
+    print("Loss for subset")
+    print(loss_subset)
 
     # load best model weights
     model.load_state_dict(best_model_wts)

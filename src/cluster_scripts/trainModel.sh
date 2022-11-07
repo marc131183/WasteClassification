@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --job-name="trainModel_resnet18"
+#SBATCH --job-name="trainModel_resnet50"
 #SBATCH --account=ie-idi
 #SBATCH --partition=GPUQ
 #SBATCH --gres=gpu:1
@@ -8,7 +8,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=14
 #SBATCH --time=04:00:00
-#SBATCH --output=trainModel_resnet18.log
+#SBATCH --output=trainModel_resnet50.log
 #SBATCH --mail-user=<marcgro@stud.ntnu.no>
 #SBATCH --mail-type=END
 
