@@ -75,12 +75,12 @@ def evaluate_model(model, data_loaders, device):
 def crossValidateModel(init_function, train_function, device, number_of_folds):
     all_acc = []
 
-    # base_dir = (
-    #     os.getcwd()
-    #     + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
-    # )
+    base_dir = (
+        os.getcwd()
+        + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
+    )
 
-    base_dir = "data/classification/kFold_{}/".format(number_of_folds)
+    # base_dir = "data/classification/kFold_{}/".format(number_of_folds)
 
     confusion_matrix = None
     conf_initialized = False
@@ -222,6 +222,12 @@ def train_model_optional_validation(
                     print(
                         f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s"
                     )
+                    print("Loss for all training data")
+                    print(loss_all)
+                    print("Accuracy for all training data")
+                    print(acc_all)
+                    print("Loss for subset")
+                    print(loss_subset)
                     model.load_state_dict(best_model_wts)
                     return model
 
@@ -375,15 +381,31 @@ def model_init_function(
 
 
 if __name__ == "__main__":
+    model_type = "resnet50"
+    feature_extractor = True
+    model_final_struc = [
+        nn.ReLU(),
+        nn.Linear(1024, 512),
+        nn.ReLU(),
+        nn.Linear(512, NUM_CLASSES),
+    ]
+    print(
+        "-" * 15,
+        "Started crossvalidation on {}{} model".format(
+            model_type, "_feat" if feature_extractor else ""
+        ),
+        "-" * 15,
+    )
+    print("Final layer model structure:", model_final_struc)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     accuracy, confusion_matrix = crossValidateModel(
         lambda: model_init_function(
-            "alexnet",
-            [nn.ReLU(), nn.Linear(100, NUM_CLASSES)],
-            100,
+            model_type,
+            model_final_struc,
+            1024,
             device,
-            feature_extractor=True,
+            feature_extractor=feature_extractor,
         ),
         lambda a, b, c, d, e, f: train_model_optional_validation(
             a, b, c, d, e, f, device, num_epochs=NUM_EPOCHS

@@ -1,14 +1,14 @@
 #!/bin/sh
-#SBATCH --job-name="crossValidationVGG"
+#SBATCH --job-name="ResNet50_e_ReLU_1024_ReLU_512_feat"
 #SBATCH --account=ie-idi
 #SBATCH --partition=GPUQ
 #SBATCH --gres=gpu:1
 #SBATCH --constraint="P100"
 #SBATCH --mem=10G
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=14
+#SBATCH --ntasks-per-node=10
 #SBATCH --time=04:00:00
-#SBATCH --output=VGG_e_ReLU_100_feat.log
+#SBATCH --output=ResNet50_e_ReLU_1024_ReLU_512_feat.log
 #SBATCH --mail-user=<marcgro@stud.ntnu.no>
 #SBATCH --mail-type=END
 

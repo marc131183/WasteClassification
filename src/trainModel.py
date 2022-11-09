@@ -1,6 +1,7 @@
 import os
 import torch
 
+from torch import nn
 from torchvision import datasets
 
 
@@ -15,12 +16,14 @@ from crossValidation import (
 
 
 if __name__ == "__main__":
-    model_type = "resnet18"
+    model_type = "resnet50"
     feature_extractor = False
     save_dir = (
-        os.getcwd() + "/WasteClassification/data/models/" + model_type + "_feat"
-        if feature_extractor
-        else "" + ".pt"
+        os.getcwd()
+        + "/WasteClassification/data/models/"
+        + model_type
+        + ("_feat" if feature_extractor else "")
+        + ".pt"
     )
 
     data_dir = os.getcwd() + "/WasteClassification/data/classification/all"
@@ -35,15 +38,21 @@ if __name__ == "__main__":
         for x in ["train"]
     }
 
-    print("-" * 15, "Start training {} model".format(model_type), "-" * 15)
+    print(
+        "-" * 15,
+        "Start training {}{} model".format(
+            model_type, "_feat" if feature_extractor else ""
+        ),
+        "-" * 15,
+    )
     model = train_model_optional_validation(
         *model_init_function(
-            model_type, [], NUM_CLASSES, device, feature_extractor=False
+            model_type, [], NUM_CLASSES, device, feature_extractor=feature_extractor
         ),
         data_loaders,
         dataset_sizes,
         device,
-        max_epochs=NUM_EPOCHS
+        num_epochs=NUM_EPOCHS
     )
 
-    torch.save(model, save_dir)
+    torch.save(model.state_dict(), save_dir)
