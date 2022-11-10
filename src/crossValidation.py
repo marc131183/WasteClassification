@@ -83,15 +83,17 @@ def evaluate_model(model, data_loaders, device):
 def crossValidateModel(init_function, train_function, device, number_of_folds):
     all_acc = []
 
-    # base_dir = (
-    #     os.getcwd()
-    #     + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
-    # )
+    base_dir = (
+        os.getcwd()
+        + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
+    )
 
-    base_dir = "data/classification/kFold_{}/".format(number_of_folds)
+    # base_dir = "data/classification/kFold_{}/".format(number_of_folds)
 
     confusion_matrix = None
     conf_initialized = False
+    time_elapsed = []
+    num_epochs = []
 
     for i in range(number_of_folds):
         print("-" * 15, "Started working on Fold {}".format(i + 1), "-" * 15)
@@ -109,7 +111,10 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
             for x in ["train", "test", "val"]
         }
 
-        model = train_function(*init_function(), data_loaders, dataset_sizes)
+        model, e, t = train_function(*init_function(), data_loaders, dataset_sizes)
+
+        time_elapsed.append(t)
+        num_epochs.append(e)
 
         acc, conf = evaluate_model(model, data_loaders, device)
 
@@ -120,7 +125,7 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
             confusion_matrix = conf
             conf_initialized = True
 
-    return all_acc, confusion_matrix
+    return all_acc, confusion_matrix, time_elapsed, num_epochs
 
 
 def train_model(
@@ -235,7 +240,7 @@ def train_model(
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-    return model
+    return model, best_epoch, time_elapsed
 
 
 def model_init_function(
@@ -323,7 +328,7 @@ if __name__ == "__main__":
     print("Classifier model structure:", model_final_struc)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    accuracy, confusion_matrix = crossValidateModel(
+    accuracy, confusion_matrix, time_elapsed, num_epochs = crossValidateModel(
         lambda: model_init_function(
             model_type,
             model_final_struc,
@@ -341,5 +346,9 @@ if __name__ == "__main__":
     print("accuracy", accuracy)
     print("mean accuracy", np.mean(accuracy))
     print("stddev accuracy", np.std(accuracy))
+    print("time elapsed", time_elapsed)
+    print("average time elapsed", np.mean(time_elapsed))
+    print("epochs trained", num_epochs)
+    print("average epochs trained", np.mean(num_epochs))
     print("confusion matrix")
     print(confusion_matrix)
