@@ -6,6 +6,7 @@ def stratifiedKFold(y, number_of_folds):
     """it is assumed that y is sorted"""
     train_folds = [[] for i in range(number_of_folds)]
     test_folds = [[] for i in range(number_of_folds)]
+    val_folds = [[] for i in range(number_of_folds)]
 
     first_indices = []
     last_elem_seen = None
@@ -28,18 +29,34 @@ def stratifiedKFold(y, number_of_folds):
             end_test = (
                 first_indices[j] + elements_per_class[j] * (i + 1) // number_of_folds
             )
+            start_val = (
+                first_indices[j] + elements_per_class[j] * (i + 1) // number_of_folds
+            )
+            end_val = (
+                first_indices[j]
+                + elements_per_class[j] * ((i + 2) % number_of_folds) // number_of_folds
+            )
 
+            if start_val < end_val:
+                val_indices = set(range(start_val, end_val))
+            else:
+                val_indices = set(
+                    range(start_val, first_indices[j] + elements_per_class[j])
+                ).union(set(range(first_indices[j], end_val)))
             test_indices = set(range(start_test, end_test))
-            train_indices = class_indices[j].difference(test_indices)
+            train_indices = (
+                class_indices[j].difference(test_indices).difference(val_indices)
+            )
 
             train_folds[i].extend(train_indices)
             test_folds[i].extend(test_indices)
+            val_folds[i].extend(val_indices)
 
-    return [(x, y) for x, y in zip(train_folds, test_folds)]
+    return [(x, y, z) for x, y, z in zip(train_folds, test_folds, val_folds)]
 
 
 def createKFoldSplit(number_of_folds=5):
-    dir = os.getcwd() + "/WasteClassification/"
+    dir = ""  # os.getcwd() + "/WasteClassification/"
     source = dir + "data/cleaned/"
     target = dir + "data/classification/"
     main_classes = os.listdir(source)
@@ -68,20 +85,20 @@ def createKFoldSplit(number_of_folds=5):
     ]
 
     os.mkdir(target + "kFold_" + str(number_of_folds))
-    for i, (train_index, test_index) in enumerate(
-        stratifiedKFold(labels, number_of_folds)
-    ):
+    for i, indices in enumerate(stratifiedKFold(labels, number_of_folds)):
         temp_path = target + "kFold_" + str(number_of_folds) + "/" + "fold_" + str(i)
         os.mkdir(temp_path)
 
         os.mkdir(temp_path + "/train")
         os.mkdir(temp_path + "/test")
+        os.mkdir(temp_path + "/val")
         for elem in ["7133", "7055", "7051", "7042", "others"]:
-            os.mkdir(temp_path + "/train/" + str(elem))
-            os.mkdir(temp_path + "/test/" + str(elem))
+            os.mkdir(temp_path + "/train/" + elem)
+            os.mkdir(temp_path + "/test/" + elem)
+            os.mkdir(temp_path + "/val/" + elem)
 
-        for phase in ["train", "test"]:
-            for j, index in enumerate(train_index if phase == "train" else test_index):
+        for i, phase in zip(range(len(indices)), ["train", "test", "val"]):
+            for j, index in enumerate(indices[i]):
                 source_path = paths[index]
                 dest_path = (
                     temp_path
