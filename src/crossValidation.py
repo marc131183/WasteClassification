@@ -13,7 +13,7 @@ from torchvision import models, transforms, datasets
 
 # define parameters
 NUM_CLASSES = 5
-NUM_EPOCHS = 25
+NUM_EPOCHS = 100
 NUMBER_OF_FOLDS = 10
 BATCH_SIZE = 4
 
@@ -29,6 +29,14 @@ DATA_TRANSFORMS = {
         ]
     ),
     "test": transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    ),
+    "val": transforms.Compose(
         [
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -55,7 +63,7 @@ def evaluate_model(model, data_loaders, device):
 
     # iterate over test data
     with torch.no_grad():
-        for inputs, labels in data_loaders["test"]:
+        for inputs, labels in data_loaders["val"]:
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -75,12 +83,12 @@ def evaluate_model(model, data_loaders, device):
 def crossValidateModel(init_function, train_function, device, number_of_folds):
     all_acc = []
 
-    base_dir = (
-        os.getcwd()
-        + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
-    )
+    # base_dir = (
+    #     os.getcwd()
+    #     + "/WasteClassification/data/classification/kFold_{}/".format(number_of_folds)
+    # )
 
-    # base_dir = "data/classification/kFold_{}/".format(number_of_folds)
+    base_dir = "data/classification/kFold_{}/".format(number_of_folds)
 
     confusion_matrix = None
     conf_initialized = False
@@ -91,14 +99,14 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
 
         image_datasets = {
             x: datasets.ImageFolder(os.path.join(temp_dir, x), DATA_TRANSFORMS[x])
-            for x in ["train", "test"]
+            for x in ["train", "test", "val"]
         }
-        dataset_sizes = {x: len(image_datasets[x]) for x in ["train", "test"]}
+        dataset_sizes = {x: len(image_datasets[x]) for x in ["train", "test", "val"]}
         data_loaders = {
             x: torch.utils.data.DataLoader(
                 image_datasets[x], batch_size=BATCH_SIZE, shuffle=True, num_workers=10
             )
-            for x in ["train", "test"]
+            for x in ["train", "test", "val"]
         }
 
         model = train_function(*init_function(), data_loaders, dataset_sizes)
@@ -115,139 +123,6 @@ def crossValidateModel(init_function, train_function, device, number_of_folds):
     return all_acc, confusion_matrix
 
 
-def train_model_optional_validation(
-    model,
-    criterion,
-    optimizer,
-    scheduler,
-    data_loaders,
-    dataset_sizes,
-    device,
-    early_stopping_subset_ratio=0.1,
-    early_stopping_tolerance=5,
-    num_epochs=25,
-):
-    since = time.time()
-
-    best_model_wts = copy.deepcopy(model.state_dict())
-    best_loss = np.inf
-
-    phases = ["train"]
-    if "test" in data_loaders:
-        phases.append("test")
-
-    # select subset of batches of training data to do early stopping on
-    early_stopping_subset_indices = np.arange(len(data_loaders["train"]))
-    np.random.shuffle(early_stopping_subset_indices)
-    early_stopping_subset_indices = early_stopping_subset_indices[
-        : int(len(early_stopping_subset_indices) * early_stopping_subset_ratio)
-    ]
-    is_part_of_indices = np.zeros((len(data_loaders["train"])), dtype=bool)
-    is_part_of_indices[early_stopping_subset_indices] = True
-    no_improvement_since = 0
-
-    loss_all = []
-    acc_all = []
-    loss_subset = []
-
-    for epoch in range(num_epochs):
-        print(f"Epoch {epoch+1}/{num_epochs}")
-        print("-" * 10)
-
-        # Each epoch has a training and testing phase
-        for phase in phases:
-            if phase == "train":
-                model.train()  # Set model to training mode
-            else:
-                model.eval()  # Set model to evaluate mode
-
-            running_loss = 0.0
-            running_corrects = 0
-            subset_running_loss = 0.0
-
-            # Iterate over data.
-            for i, (inputs, labels) in enumerate(data_loaders[phase]):
-                inputs = inputs.to(device)
-                labels = labels.to(device)
-
-                # zero the parameter gradients
-                optimizer.zero_grad()
-
-                # forward
-                # track history if only in train
-                with torch.set_grad_enabled(phase == "train"):
-                    outputs = model(inputs)
-                    _, preds = torch.max(outputs, 1)
-                    loss = criterion(outputs, labels)
-
-                    # backward + optimize only if in training phase
-                    if phase == "train":
-                        loss.backward()
-                        optimizer.step()
-
-                # statistics
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
-                if phase == "train" and is_part_of_indices[i]:
-                    subset_running_loss += loss.item() * inputs.size(0)
-            if phase == "train":
-                scheduler.step()
-
-            epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_acc = running_corrects.double() / dataset_sizes[phase]
-            if phase == "train":
-                subset_running_loss = subset_running_loss / len(
-                    early_stopping_subset_indices
-                )
-                print(f"Subset loss : {subset_running_loss:.4f}")
-
-            print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
-
-            if phase == "train":
-                loss_all.append(epoch_loss)
-                acc_all.append(epoch_acc)
-                loss_subset.append(subset_running_loss)
-
-                no_improvement_since += 1
-
-                if subset_running_loss < best_loss:
-                    best_loss = subset_running_loss
-                    no_improvement_since = 0
-                    # deep copy the model
-                    best_model_wts = copy.deepcopy(model.state_dict())
-
-                if no_improvement_since > early_stopping_tolerance:
-                    print("-" * 5, "Early stopping", "-" * 5)
-                    time_elapsed = time.time() - since
-                    print(
-                        f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s"
-                    )
-                    print("Loss for all training data")
-                    print(loss_all)
-                    print("Accuracy for all training data")
-                    print(acc_all)
-                    print("Loss for subset")
-                    print(loss_subset)
-                    model.load_state_dict(best_model_wts)
-                    return model
-
-        print()
-
-    time_elapsed = time.time() - since
-    print(f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
-
-    print("Loss for all training data")
-    print(loss_all)
-    print("Accuracy for all training data")
-    print(acc_all)
-    print("Loss for subset")
-    print(loss_subset)
-
-    # load best model weights
-    model.load_state_dict(best_model_wts)
-    return model
-
-
 def train_model(
     model,
     criterion,
@@ -256,19 +131,26 @@ def train_model(
     data_loaders,
     dataset_sizes,
     device,
-    num_epochs=25,
+    max_epochs=25,
+    patience=5,
 ):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
+    best_epoch = 0
     best_acc = 0.0
+    no_improvement_since = 0
 
-    for epoch in range(num_epochs):
-        print(f"Epoch {epoch+1}/{num_epochs}")
+    phases = [elem for elem in ["train", "test", "val"] if elem in data_loaders]
+
+    plot_data = {phase + metric: [] for phase in phases for metric in ["loss", "acc"]}
+
+    for epoch in range(max_epochs):
+        print(f"Epoch {epoch+1}/{max_epochs}")
         print("-" * 10)
 
         # Each epoch has a training and testing phase
-        for phase in ["train", "test"]:
+        for phase in phases:
             if phase == "train":
                 model.train()  # Set model to training mode
             else:
@@ -306,18 +188,50 @@ def train_model(
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
+            plot_data[phase + "acc"].append(epoch_acc)
+            plot_data[phase + "loss"].append(epoch_loss)
+
             print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
-            # deep copy the model
-            if phase == "test" and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = copy.deepcopy(model.state_dict())
+            if phase == "test":
+                # deep copy the model
+                if epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
+                    best_epoch = epoch
+                    no_improvement_since = 0
+
+                # early stopping when accuracy hasn't improved on test data for some time (patience epochs)
+                no_improvement_since += 1
+                if no_improvement_since >= patience:
+                    time_elapsed = time.time() - since
+                    print(
+                        f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s, due to early stopping"
+                    )
+                    print(f"Best test acc: {best_acc:4f}")
+
+                    for metric in ["acc", "loss"]:
+                        for phase in phases:
+                            print("{} {}:".format(phase, metric))
+                            print(plot_data[phase + metric][: best_epoch + 1])
+
+                    # load best model weights
+                    model.load_state_dict(best_model_wts)
+
+                    return model
 
         print()
 
     time_elapsed = time.time() - since
-    print(f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s")
-    print(f"Best val Acc: {best_acc:4f}")
+    print(
+        f"Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s, due to maximum epochs reached"
+    )
+    print(f"Best test acc: {best_acc:4f}")
+
+    for metric in ["acc", "loss"]:
+        for phase in phases:
+            print("{} {}:".format(phase, metric))
+            print(plot_data[phase + metric][: best_epoch + 1])
 
     # load best model weights
     model.load_state_dict(best_model_wts)
@@ -329,7 +243,7 @@ def model_init_function(
     final_layers,
     final_layers_in,
     device,
-    feature_extractor=False,
+    feature_percentage_frozen=0.0,
     learn_rate=0.001,
     momentum=0.9,
 ):
@@ -340,30 +254,37 @@ def model_init_function(
         "vgg": models.vgg11,
     }
 
-    class CustomModel(nn.Module):
-        def __init__(self) -> None:
-            super(CustomModel, self).__init__()
+    model = available_architectures[model_architecture](pretrained=True)
 
-            self.network = available_architectures[model_architecture](pretrained=True)
-            if feature_extractor:
-                for param in self.network.parameters():
-                    param.requires_grad = False
-            if "resnet" in model_architecture:
-                self.network.fc = nn.Sequential(
-                    nn.Linear(self.network.fc.in_features, final_layers_in),
-                    *final_layers,
-                )
-            elif "alexnet" in model_architecture or "vgg" in model_architecture:
-                self.network.classifier[-1] = nn.Sequential(
-                    nn.Linear(self.network.classifier[-1].in_features, final_layers_in),
-                    *final_layers,
-                )
+    if "resnet" in model_architecture:
+        if feature_percentage_frozen == 1:
+            for param in model.parameters():
+                param.requires_grad = False
+        elif feature_percentage_frozen != 0:
+            raise Exception(
+                "ResNet currently only supports feature_percentage_frozen =0 or =1"
+            )
 
-        def forward(self, x):
-            x = self.network(x)
-            return x
+        model.fc = nn.Sequential(
+            nn.Linear(model.fc.in_features, final_layers_in), *final_layers
+        )
+    elif "alexnet" in model_architecture or "vgg" in model_architecture:
+        # get the indices of layers which have trainable parameters
+        trainable_layers = [
+            i
+            for i, elem in enumerate(model.features)
+            if len(list(elem.parameters())) != 0
+        ]
+        # freeze the first (feature_percentage_frozen * 100)% trainable layers
+        for i in range(int(feature_percentage_frozen * len(trainable_layers))):
+            for param in model.features[trainable_layers[i]].parameters():
+                param.requires_grad = False
 
-    model = CustomModel()
+        # change the classifier
+        model.classifier = nn.Sequential(
+            nn.Linear(model.classifier[0].in_features, final_layers_in), *final_layers
+        )
+
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -381,34 +302,37 @@ def model_init_function(
 
 
 if __name__ == "__main__":
-    model_type = "resnet50"
-    feature_extractor = True
+    model_type = "resnet18"
+    feature_percentage_frozen = 0.0
     model_final_struc = [
         nn.ReLU(),
-        nn.Linear(1024, 512),
+        nn.Dropout(),
+        nn.Linear(512, 128),
         nn.ReLU(),
-        nn.Linear(512, NUM_CLASSES),
+        nn.Dropout(),
+        nn.Linear(128, NUM_CLASSES),
     ]
+
     print(
         "-" * 15,
-        "Started crossvalidation on {}{} model".format(
-            model_type, "_feat" if feature_extractor else ""
+        "Started crossvalidation on {} model, feature_percentage_frozen = {}".format(
+            model_type, feature_percentage_frozen
         ),
         "-" * 15,
     )
-    print("Final layer model structure:", model_final_struc)
+    print("Classifier model structure:", model_final_struc)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     accuracy, confusion_matrix = crossValidateModel(
         lambda: model_init_function(
             model_type,
             model_final_struc,
-            1024,
+            512,
             device,
-            feature_extractor=feature_extractor,
+            feature_percentage_frozen=feature_percentage_frozen,
         ),
-        lambda a, b, c, d, e, f: train_model_optional_validation(
-            a, b, c, d, e, f, device, num_epochs=NUM_EPOCHS
+        lambda a, b, c, d, e, f: train_model(
+            a, b, c, d, e, f, device, max_epochs=NUM_EPOCHS
         ),
         device,
         NUMBER_OF_FOLDS,
