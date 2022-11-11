@@ -223,7 +223,7 @@ def train_model(
                     # load best model weights
                     model.load_state_dict(best_model_wts)
 
-                    return model
+                    return model, best_epoch, time_elapsed
 
         print()
 
@@ -302,9 +302,14 @@ def model_init_function(
             for param in model.features[trainable_layers[i]].parameters():
                 param.requires_grad = False
 
+        if model_architecture == "vgg":
+            in_features = 25088
+        elif model_architecture == "alexnet":
+            in_features = 9216
+
         # change the classifier
         model.classifier = nn.Sequential(
-            nn.Linear(model.classifier[0].in_features, final_layers_in), *final_layers
+            nn.Linear(in_features, final_layers_in), *final_layers
         )
 
     model = model.to(device)
@@ -324,16 +329,26 @@ def model_init_function(
 
 
 if __name__ == "__main__":
-    model_type = "resnet18"
-    feature_percentage_frozen = 0.0
-    model_final_struc = [
-        nn.ReLU(),
-        nn.Dropout(),
-        nn.Linear(512, 128),
-        nn.ReLU(),
-        nn.Dropout(),
-        nn.Linear(128, NUM_CLASSES),
-    ]
+    # Model Parameters
+    model_type = "resnet50"
+    feature_percentage_frozen = 0
+    classifier_type = 1
+    if classifier_type == 0:
+        model_final_struc = []
+        model_final_in = NUM_CLASSES
+    elif classifier_type == 1:
+        model_final_struc = [
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(128, NUM_CLASSES),
+        ]
+        model_final_in = 512
+    elif classifier_type == 2:
+        model_final_struc = [nn.ReLU(), nn.Dropout(), nn.Linear(128, NUM_CLASSES)]
+        model_final_in = 128
 
     print(
         "-" * 15,
@@ -342,6 +357,7 @@ if __name__ == "__main__":
         ),
         "-" * 15,
     )
+    print("Classifier model type:", classifier_type)
     print("Classifier model structure:", model_final_struc)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -349,12 +365,20 @@ if __name__ == "__main__":
         lambda: model_init_function(
             model_type,
             model_final_struc,
-            512,
+            model_final_in,
             device,
             feature_percentage_frozen=feature_percentage_frozen,
         ),
         lambda a, b, c, d, e, f: train_model(
-            a, b, c, d, e, f, device, max_epochs=NUM_EPOCHS
+            a,
+            b,
+            c,
+            d,
+            e,
+            f,
+            device,
+            max_epochs=NUM_EPOCHS,
+            patience=10,
         ),
         device,
         NUMBER_OF_FOLDS,
