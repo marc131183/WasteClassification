@@ -243,6 +243,25 @@ def train_model(
     return model, best_epoch, time_elapsed
 
 
+def get_trainable_layers_of_resnet(model):
+    trainable_layers = []
+    elem_stack = list(model.children())
+    elem_stack.reverse()
+    while len(elem_stack) > 0:
+        cur_elem = elem_stack[-1]
+        del elem_stack[-1]
+        # check if elem has children, if yes then don't count it
+        children_of_cur = list(cur_elem.children())
+        if len(children_of_cur) > 0:
+            elem_stack.extend(children_of_cur)
+        else:
+            # elem has no children, count it as layer and check if is trainable
+            if len(list(cur_elem.parameters())) > 0:
+                trainable_layers.append(cur_elem)
+
+    return trainable_layers
+
+
 def model_init_function(
     model_architecture,
     final_layers,
@@ -262,13 +281,11 @@ def model_init_function(
     model = available_architectures[model_architecture](pretrained=True)
 
     if "resnet" in model_architecture:
-        if feature_percentage_frozen == 1:
-            for param in model.parameters():
+        trainable_layers = get_trainable_layers_of_resnet(model)
+
+        for i in range(int(0.9 * len(trainable_layers))):
+            for param in trainable_layers[i].parameters():
                 param.requires_grad = False
-        elif feature_percentage_frozen != 0:
-            raise Exception(
-                "ResNet currently only supports feature_percentage_frozen =0 or =1"
-            )
 
         model.fc = nn.Sequential(
             nn.Linear(model.fc.in_features, final_layers_in), *final_layers
