@@ -164,14 +164,16 @@ def cutImages(
 
 def splitIntoTrainTest():
     path = "data/cleaned/"
-    dest_train = "data/classification/all/"
-    dest_test = "data/classification/val/"
-    split = 1  # 80% train, 20% test
+    dest_train = "data/classification/train/"
+    dest_test = "data/classification/test/"
+    split = 0.9
     main_classes = ["7133", "7055", "7051", "7042"]
     i = 0
     j = 0
+    os.mkdir(dest_train[:-1])
+    os.mkdir(dest_test[:-1])
     os.mkdir(dest_train + "others")
-    # os.mkdir(dest_test + "others")
+    os.mkdir(dest_test + "others")
 
     for folder in os.listdir(path):
         files = os.listdir(path + folder + "/")
@@ -183,7 +185,7 @@ def splitIntoTrainTest():
                 dest_path = dest_train + folder + "/" + file
                 shutil.copy(source_path, dest_path)
 
-            # os.mkdir(dest_test + folder)
+            os.mkdir(dest_test + folder)
             for file in files[int(len(files) * split) :]:
                 source_path = path + folder + "/" + file
                 dest_path = dest_test + folder + "/" + file
@@ -204,6 +206,7 @@ def splitIntoTrainTest():
 
 if __name__ == "__main__":
     folder = "data/unlabelled/7152"
+    splitIntoTrainTest()
     # splitIntoTrainTest()
     # deleteImages(folder)
     # updateImageNames(folder)

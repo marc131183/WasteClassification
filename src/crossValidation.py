@@ -330,8 +330,8 @@ def model_init_function(
 
 if __name__ == "__main__":
     # Model Parameters
-    model_type = "resnet18"
-    feature_percentage_frozen = 0
+    model_type = "resnet50"
+    feature_percentage_frozen = 1
     classifier_type = 0
     if classifier_type == 0:
         model_final_struc = []
