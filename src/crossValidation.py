@@ -283,7 +283,7 @@ def model_init_function(
     if "resnet" in model_architecture:
         trainable_layers = get_trainable_layers_of_resnet(model)
 
-        for i in range(int(0.9 * len(trainable_layers))):
+        for i in range(int(feature_percentage_frozen * len(trainable_layers))):
             for param in trainable_layers[i].parameters():
                 param.requires_grad = False
 
@@ -330,9 +330,9 @@ def model_init_function(
 
 if __name__ == "__main__":
     # Model Parameters
-    model_type = "resnet50"
+    model_type = "resnet18"
     feature_percentage_frozen = 0
-    classifier_type = 1
+    classifier_type = 0
     if classifier_type == 0:
         model_final_struc = []
         model_final_in = NUM_CLASSES
@@ -349,6 +349,16 @@ if __name__ == "__main__":
     elif classifier_type == 2:
         model_final_struc = [nn.ReLU(), nn.Dropout(), nn.Linear(128, NUM_CLASSES)]
         model_final_in = 128
+    elif classifier_type == 3:
+        model_final_struc = [
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(2048, 2048),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(2048, NUM_CLASSES),
+        ]
+        model_final_in = 2048
 
     print(
         "-" * 15,

@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH --job-name="ResNet50_e_ReLU_1024_ReLU_512_feat"
+#SBATCH --job-name="R18C1F08"
 #SBATCH --account=ie-idi
 #SBATCH --partition=GPUQ
 #SBATCH --gres=gpu:1
@@ -7,8 +7,8 @@
 #SBATCH --mem=10G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=10
-#SBATCH --time=04:00:00
-#SBATCH --output=ResNet50_e_ReLU_1024_ReLU_512_feat.log
+#SBATCH --time=10:00:00
+#SBATCH --output=ResNet18_ctype1_f08.log
 #SBATCH --mail-user=<marcgro@stud.ntnu.no>
 #SBATCH --mail-type=END
 
