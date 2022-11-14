@@ -47,8 +47,6 @@ if __name__ == "__main__":
         ]
         model_final_in = 2048
 
-    model_type = "resnet50"
-    feature_extractor = False
     save_dir = (
         os.getcwd()
         + "/WasteClassification/data/models/"
@@ -75,11 +73,13 @@ if __name__ == "__main__":
 
     print(
         "-" * 15,
-        "Start training {}{} model".format(
-            model_type, "_feat" if feature_extractor else ""
+        "Start training {} model, feature_percentage_frozen = {}".format(
+            model_type, feature_percentage_frozen
         ),
         "-" * 15,
     )
+    print("Classifier model type:", classifier_type)
+    print("Classifier model structure:", model_final_struc)
     model = train_model(
         *model_init_function(
             model_type,
