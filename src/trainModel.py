@@ -80,7 +80,7 @@ if __name__ == "__main__":
     )
     print("Classifier model type:", classifier_type)
     print("Classifier model structure:", model_final_struc)
-    model = train_model(
+    model, e, t = train_model(
         *model_init_function(
             model_type,
             model_final_struc,
@@ -94,5 +94,8 @@ if __name__ == "__main__":
         max_epochs=NUM_EPOCHS,
         patience=10,
     )
+
+    print("time elapsed", t)
+    print("epochs trained", e)
 
     torch.save(model.state_dict(), save_dir)

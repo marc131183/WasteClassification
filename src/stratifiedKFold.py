@@ -109,5 +109,49 @@ def createKFoldSplit(number_of_folds=5):
                 shutil.copy(source_path, dest_path)
 
 
+def splitIntoTrainTest():
+    base_path = os.getcwd() + "/WasteClassification/"
+    path = base_path + "data/cleaned/"
+    dest_train = base_path + "data/classification/train/"
+    dest_test = base_path + "data/classification/test/"
+    split = 0.9
+    main_classes = ["7133", "7055", "7051", "7042"]
+    i = 0
+    j = 0
+    os.mkdir(dest_train[:-1])
+    os.mkdir(dest_test[:-1])
+    os.mkdir(dest_train + "others")
+    os.mkdir(dest_test + "others")
+
+    for folder in os.listdir(path):
+        files = os.listdir(path + folder + "/")
+        files = sorted(files, key=lambda x: int(os.path.basename(x)[:-4]), reverse=True)
+        if folder in main_classes:
+            os.mkdir(dest_train + folder)
+            for file in files[: int(len(files) * split)]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_train + folder + "/" + file
+                shutil.copy(source_path, dest_path)
+
+            os.mkdir(dest_test + folder)
+            for file in files[int(len(files) * split) :]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_test + folder + "/" + file
+                shutil.copy(source_path, dest_path)
+        else:
+            for file in files[: int(len(files) * split)]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_train + "others/{}.png".format(i)
+                shutil.copy(source_path, dest_path)
+                i += 1
+
+            for file in files[int(len(files) * split) :]:
+                source_path = path + folder + "/" + file
+                dest_path = dest_test + "others/{}.png".format(j)
+                shutil.copy(source_path, dest_path)
+                j += 1
+
+
 if __name__ == "__main__":
-    createKFoldSplit(number_of_folds=10)
+    # createKFoldSplit(number_of_folds=10)
+    splitIntoTrainTest()

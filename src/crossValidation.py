@@ -218,7 +218,10 @@ def train_model(
                     for metric in ["acc", "loss"]:
                         for phase in phases:
                             print("{} {}:".format(phase, metric))
-                            print(plot_data[phase + metric][: best_epoch + 1])
+                            print("all", plot_data[phase + metric])
+                            print(
+                                "till best", plot_data[phase + metric][: best_epoch + 1]
+                            )
 
                     # load best model weights
                     model.load_state_dict(best_model_wts)

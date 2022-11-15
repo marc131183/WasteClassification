@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import seaborn as sn
 import numpy as np
 import pandas as pd
 
@@ -158,6 +159,30 @@ def accuracyComparisonPlot():
     plt.xlabel("Model Architecture")
     plt.gca().yaxis.grid(True, linestyle="--")
     plt.tight_layout()
+    plt.show()
+
+
+def createHeatMapPlot():
+    heatmap = np.array(
+        [
+            [768, 10, 9, 32, 83],
+            [25, 818, 18, 59, 109],
+            [2, 7, 967, 46, 7],
+            [72, 71, 89, 775, 30],
+            [46, 35, 5, 43, 821],
+        ]
+    )
+    classes = ["7042", "7051", "7055", "7133", "others"]
+    heatmap = np.round(heatmap / np.sum(heatmap, axis=1), 5) * 100
+    df_cm = pd.DataFrame(
+        heatmap, index=[i for i in classes], columns=[i for i in classes]
+    )
+    plt.figure(figsize=(12, 7))
+    ax = sn.heatmap(df_cm, annot=True, fmt="g")
+    for t in ax.texts:
+        t.set_text(t.get_text() + "%")
+    plt.xlabel("predicted")
+    plt.ylabel("truth")
     plt.show()
 
 
