@@ -9,9 +9,9 @@ from crossValidation import (
     train_model,
     model_init_function,
     DATA_TRANSFORMS,
+    CLASSIFIERS,
     BATCH_SIZE,
     NUM_EPOCHS,
-    NUM_CLASSES,
 )
 
 
@@ -20,43 +20,17 @@ if __name__ == "__main__":
     model_type = "resnet18"
     feature_percentage_frozen = 0
     classifier_type = 0
-    if classifier_type == 0:
-        model_final_struc = []
-        model_final_in = NUM_CLASSES
-    elif classifier_type == 1:
-        model_final_struc = [
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(512, 128),
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(128, NUM_CLASSES),
-        ]
-        model_final_in = 512
-    elif classifier_type == 2:
-        model_final_struc = [nn.ReLU(), nn.Dropout(), nn.Linear(128, NUM_CLASSES)]
-        model_final_in = 128
-    elif classifier_type == 3:
-        model_final_struc = [
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(2048, 2048),
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(2048, NUM_CLASSES),
-        ]
-        model_final_in = 2048
 
     save_dir = (
         os.getcwd()
         + "/WasteClassification/data/models/"
         + model_type
-        + "_cytpe{}".format(classifier_type)
+        + "_ctype{}".format(classifier_type)
         + "_f{}".format(str(feature_percentage_frozen).replace(".", ""))
         + ".pt"
     )
 
-    data_dir = "data/classification/"  # os.getcwd() + "/WasteClassification/data/classification/"
+    data_dir = os.getcwd() + "/WasteClassification/data/classification/"
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     image_datasets = {
@@ -79,12 +53,12 @@ if __name__ == "__main__":
         "-" * 15,
     )
     print("Classifier model type:", classifier_type)
-    print("Classifier model structure:", model_final_struc)
+    print("Classifier model structure:", CLASSIFIERS[classifier_type][0])
     model, e, t = train_model(
         *model_init_function(
             model_type,
-            model_final_struc,
-            model_final_in,
+            CLASSIFIERS[classifier_type][0],
+            CLASSIFIERS[classifier_type][1],
             device,
             feature_percentage_frozen=feature_percentage_frozen,
         ),

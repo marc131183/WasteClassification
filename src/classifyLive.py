@@ -12,7 +12,7 @@ if __name__ == "__main__":
     save_path = FOLDER + "data/sample_image.png"
 
     cam = Camera(1280, 720)
-    model = ModelManager()
+    model = ModelManager(FOLDER + "data/models/resnet50_ctype0_f06.pt")
     imgV = ImageViewer()
     width, height = imgV.screen_width, imgV.screen_height
 

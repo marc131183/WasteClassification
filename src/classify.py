@@ -4,25 +4,29 @@ import time
 import numpy as np
 
 from PIL import Image
-from torchvision import transforms
+from crossValidation import model_init_function, DATA_TRANSFORMS, CLASSIFIERS
 
 
 class ModelManager:
-    def __init__(self) -> None:
+    def __init__(self, path: str) -> None:
         self.class_names = ["7042", "7051", "7055", "7133", "others"]
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model = torch.load(
-            "data/models/models_new/resnet18.pt", map_location=self.device
+
+        temp = os.path.basename(path)[:-3].split("_")
+        model_type = temp[0]
+        classifier_type = int(temp[1][-1])
+        # freeze percentage doesn't matter during testing
+
+        self.model, _, _, _ = model_init_function(
+            model_type,
+            CLASSIFIERS[classifier_type][0],
+            CLASSIFIERS[classifier_type][1],
+            self.device,
         )
+        if os.path.exists(path):
+            self.model.load_state_dict(torch.load(path, map_location=self.device))
         self.model.eval()
-        self.data_transforms = transforms.Compose(
-            [
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        )
+        self.data_transforms = DATA_TRANSFORMS["test"]
 
     def classifyImage(self, img_path: str, crop: bool = False) -> str:
         img = Image.open(img_path)
@@ -44,14 +48,14 @@ class ModelManager:
 
 
 if __name__ == "__main__":
-    model = ModelManager()
+    model = ModelManager(os.getcwd() + "/data/models/resnet50_ctype0_f06.pt")
     print("finished loading")
 
     # took 348.688 seconds/ 343.219 seconds/ 329.918 seconds for 3217 images
     correct = 0
     total = 0
     start_time = time.time()
-    directory = "data/cleaned/"
+    directory = os.getcwd() + "data/cleaned/"
     for folder in os.listdir(directory):
         temp_dir = directory + folder + "/"
         for path in os.listdir(temp_dir):
@@ -63,6 +67,3 @@ if __name__ == "__main__":
         print("finished folder {}".format(folder))
     print(correct / total)
     print("--- %s seconds ---" % (time.time() - start_time))
-
-    # print(model.classifyImage("data/cleaned/7055/2.png", cropped=True))
-    # print(model.classifyImage("data/cleaned/7055/3.png", cropped=True))

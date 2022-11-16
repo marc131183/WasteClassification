@@ -46,6 +46,33 @@ DATA_TRANSFORMS = {
     ),
 }
 
+CLASSIFIERS = {
+    0: ([], NUM_CLASSES),
+    1: (
+        [
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(128, NUM_CLASSES),
+        ],
+        512,
+    ),
+    2: ([nn.ReLU(), nn.Dropout(), nn.Linear(128, NUM_CLASSES)], 128),
+    3: (
+        [
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(2048, 2048),
+            nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(2048, NUM_CLASSES),
+        ],
+        2048,
+    ),
+}
+
 
 def compute_confusion_matrix(y_true, y_pred):
     num_classes = max(len(np.unique(y_true)), len(np.unique(y_pred)))
@@ -336,32 +363,6 @@ if __name__ == "__main__":
     model_type = "resnet50"
     feature_percentage_frozen = 1
     classifier_type = 0
-    if classifier_type == 0:
-        model_final_struc = []
-        model_final_in = NUM_CLASSES
-    elif classifier_type == 1:
-        model_final_struc = [
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(512, 128),
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(128, NUM_CLASSES),
-        ]
-        model_final_in = 512
-    elif classifier_type == 2:
-        model_final_struc = [nn.ReLU(), nn.Dropout(), nn.Linear(128, NUM_CLASSES)]
-        model_final_in = 128
-    elif classifier_type == 3:
-        model_final_struc = [
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(2048, 2048),
-            nn.ReLU(),
-            nn.Dropout(),
-            nn.Linear(2048, NUM_CLASSES),
-        ]
-        model_final_in = 2048
 
     print(
         "-" * 15,
@@ -371,14 +372,14 @@ if __name__ == "__main__":
         "-" * 15,
     )
     print("Classifier model type:", classifier_type)
-    print("Classifier model structure:", model_final_struc)
+    print("Classifier model structure:", CLASSIFIERS[classifier_type][0])
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     accuracy, confusion_matrix, time_elapsed, num_epochs = crossValidateModel(
         lambda: model_init_function(
             model_type,
-            model_final_struc,
-            model_final_in,
+            CLASSIFIERS[classifier_type][0],
+            CLASSIFIERS[classifier_type][1],
             device,
             feature_percentage_frozen=feature_percentage_frozen,
         ),
