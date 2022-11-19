@@ -205,12 +205,12 @@ def splitIntoTrainTest():
 
 
 if __name__ == "__main__":
-    folder = "data/unlabelled/7152"
-    splitIntoTrainTest()
+    folder = "data/unlabelled/7133"
+    # splitIntoTrainTest()
     # splitIntoTrainTest()
     # deleteImages(folder)
     # updateImageNames(folder)
 
-    # cutImages("data/unlabelled")
+    cutImages("data/unlabelled")
     # mergeFolders("data/unlabelled/7051", "data/unlabelled/7025")
     # mergeAllFolders("data/cleaned/", "data/unlabelled/")

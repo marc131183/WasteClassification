@@ -4,7 +4,12 @@ import time
 import numpy as np
 
 from PIL import Image
-from crossValidation import model_init_function, DATA_TRANSFORMS, CLASSIFIERS
+from crossValidation import (
+    model_init_function,
+    DATA_TRANSFORMS,
+    CLASSIFIERS,
+    compute_confusion_matrix,
+)
 
 
 class ModelManager:
@@ -43,7 +48,7 @@ class ModelManager:
         img = self.data_transforms(img)[None, :]
         img = img.to(self.device)
         output = self.model(img)
-        output = (torch.max(output, 1))[1].data.cpu().numpy()
+        output = (torch.max(torch.exp(output), 1)[1]).data.cpu().numpy()
         return self.class_names[output[0]]
 
 
@@ -51,19 +56,25 @@ if __name__ == "__main__":
     model = ModelManager(os.getcwd() + "/data/models/resnet50_ctype0_f06.pt")
     print("finished loading")
 
-    # took 348.688 seconds/ 343.219 seconds/ 329.918 seconds for 3217 images
-    correct = 0
-    total = 0
+    y_true = []
+    y_pred = []
     start_time = time.time()
-    directory = os.getcwd() + "data/cleaned/"
+    directory = os.getcwd() + "/data/classification/test/"
     for folder in os.listdir(directory):
         temp_dir = directory + folder + "/"
         for path in os.listdir(temp_dir):
-            label_pred = model.classifyImage(temp_dir + path, crop=False)
-            correct += label_pred == (
-                folder if folder in ["7133", "7055", "7051", "7042"] else "others"
+            y_pred.append(
+                model.class_names.index(
+                    model.classifyImage(temp_dir + path, crop=False)
+                )
             )
-            total += 1
+            y_true.append(
+                model.class_names.index(
+                    folder if folder in ["7133", "7055", "7051", "7042"] else "others"
+                )
+            )
         print("finished folder {}".format(folder))
-    print(correct / total)
+    print("accuracy", sum(x == y for x, y in zip(y_true, y_pred)) / len(y_true))
+    print("confusion matrix")
+    print(compute_confusion_matrix(y_true, y_pred))
     print("--- %s seconds ---" % (time.time() - start_time))
