@@ -58,7 +58,7 @@ def stratifiedKFold(y, number_of_folds):
     return [(x, y, z) for x, y, z in zip(train_folds, test_folds, val_folds)]
 
 
-def createKFoldSplit(number_of_folds=5):
+def createKFoldSplit(number_of_folds=5, shuffle=False):
     dir = ""  # os.getcwd() + "/WasteClassification/"
     source = dir + "data/cleaned/"
     target = dir + "data/classification/"
@@ -74,11 +74,13 @@ def createKFoldSplit(number_of_folds=5):
         paths.extend([temp_path + elem for elem in files])
         labels.extend([i] * len(files))
 
-    # shuffle images so that folds have older and newer images
-    both = list(zip(paths, labels))
-    random.shuffle(both)
-    both.sort(key=lambda x: x[1])
-    paths, labels = zip(*both)
+    if shuffle:
+        # shuffle images so that folds have older and newer images
+        # this distorts validation and test accuracy, since the model has already seen objects there, just rotated differently
+        both = list(zip(paths, labels))
+        random.shuffle(both)
+        both.sort(key=lambda x: x[1])
+        paths, labels = zip(*both)
 
     main_classes = [
         elem
