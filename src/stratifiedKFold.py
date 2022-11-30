@@ -1,5 +1,8 @@
 import os
 import shutil
+import random
+
+random.seed(42)
 
 
 def stratifiedKFold(y, number_of_folds):
@@ -70,6 +73,12 @@ def createKFoldSplit(number_of_folds=5):
         )
         paths.extend([temp_path + elem for elem in files])
         labels.extend([i] * len(files))
+
+    # shuffle images so that folds have older and newer images
+    both = list(zip(paths, labels))
+    random.shuffle(both)
+    both.sort(key=lambda x: x[1])
+    paths, labels = zip(*both)
 
     main_classes = [
         elem
@@ -153,5 +162,5 @@ def splitIntoTrainTest():
 
 
 if __name__ == "__main__":
-    # createKFoldSplit(number_of_folds=10)
-    splitIntoTrainTest()
+    createKFoldSplit(number_of_folds=10)
+    # splitIntoTrainTest()
