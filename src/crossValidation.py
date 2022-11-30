@@ -173,9 +173,40 @@ def train_model(
     best_acc = 0.0
     no_improvement_since = 0
 
-    phases = [elem for elem in ["train", "test", "val"] if elem in data_loaders]
+    phases = [elem for elem in ["train", "val", "test"] if elem in data_loaders]
 
     plot_data = {phase + metric: [] for phase in phases for metric in ["loss", "acc"]}
+
+    # test accuracy + loss on all data before training starts
+    model.eval()
+
+    for phase in phases:
+        running_loss = 0.0
+        running_corrects = 0
+        for inputs, labels in data_loaders[phase]:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward
+            with torch.no_grad():
+                outputs = model(inputs)
+                _, preds = torch.max(outputs, 1)
+                loss = criterion(outputs, labels)
+
+            # statistics
+            running_loss += loss.item() * inputs.size(0)
+            running_corrects += torch.sum(preds == labels.data)
+
+            epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+            plot_data[phase + "acc"].append(epoch_acc)
+            plot_data[phase + "loss"].append(epoch_loss)
+
+            print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
     for epoch in range(max_epochs):
         print(f"Epoch {epoch+1}/{max_epochs}")
@@ -246,9 +277,6 @@ def train_model(
                         for phase in phases:
                             print("{} {}:".format(phase, metric))
                             print("all", plot_data[phase + metric])
-                            print(
-                                "till best", plot_data[phase + metric][: best_epoch + 1]
-                            )
 
                     # load best model weights
                     model.load_state_dict(best_model_wts)
@@ -375,35 +403,49 @@ if __name__ == "__main__":
     print("Classifier model structure:", CLASSIFIERS[classifier_type][0])
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    accuracy, confusion_matrix, time_elapsed, num_epochs = crossValidateModel(
-        lambda: model_init_function(
-            model_type,
-            CLASSIFIERS[classifier_type][0],
-            CLASSIFIERS[classifier_type][1],
-            device,
-            feature_percentage_frozen=feature_percentage_frozen,
-        ),
-        lambda a, b, c, d, e, f: train_model(
-            a,
-            b,
-            c,
-            d,
-            e,
-            f,
-            device,
-            max_epochs=NUM_EPOCHS,
-            patience=10,
-        ),
+    model, _, _, _ = model_init_function(
+        model_type,
+        CLASSIFIERS[classifier_type][0],
+        CLASSIFIERS[classifier_type][1],
         device,
-        NUMBER_OF_FOLDS,
+        feature_percentage_frozen=feature_percentage_frozen,
     )
-    print("-" * 30)
-    print("accuracy", accuracy)
-    print("mean accuracy", np.mean(accuracy))
-    print("stddev accuracy", np.std(accuracy))
-    print("time elapsed", time_elapsed)
-    print("average time elapsed", np.mean(time_elapsed))
-    print("epochs trained", num_epochs)
-    print("average epochs trained", np.mean(num_epochs))
-    print("confusion matrix")
-    print(confusion_matrix)
+
+    print("total parameters", sum(p.numel() for p in model.parameters()))
+    print(
+        "trainable parameters",
+        sum(p.numel() for p in model.parameters() if p.requires_grad),
+    )
+
+    # accuracy, confusion_matrix, time_elapsed, num_epochs = crossValidateModel(
+    #     lambda: model_init_function(
+    #         model_type,
+    #         CLASSIFIERS[classifier_type][0],
+    #         CLASSIFIERS[classifier_type][1],
+    #         device,
+    #         feature_percentage_frozen=feature_percentage_frozen,
+    #     ),
+    #     lambda a, b, c, d, e, f: train_model(
+    #         a,
+    #         b,
+    #         c,
+    #         d,
+    #         e,
+    #         f,
+    #         device,
+    #         max_epochs=NUM_EPOCHS,
+    #         patience=10,
+    #     ),
+    #     device,
+    #     NUMBER_OF_FOLDS,
+    # )
+    # print("-" * 30)
+    # print("accuracy", accuracy)
+    # print("mean accuracy", np.mean(accuracy))
+    # print("stddev accuracy", np.std(accuracy))
+    # print("time elapsed", time_elapsed)
+    # print("average time elapsed", np.mean(time_elapsed))
+    # print("epochs trained", num_epochs)
+    # print("average epochs trained", np.mean(num_epochs))
+    # print("confusion matrix")
+    # print(confusion_matrix)
