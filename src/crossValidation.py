@@ -200,13 +200,13 @@ def train_model(
             running_loss += loss.item() * inputs.size(0)
             running_corrects += torch.sum(preds == labels.data)
 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+        epoch_loss = running_loss / dataset_sizes[phase]
+        epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
-            plot_data[phase + "acc"].append(epoch_acc)
-            plot_data[phase + "loss"].append(epoch_loss)
+        plot_data[phase + "acc"].append(epoch_acc)
+        plot_data[phase + "loss"].append(epoch_loss)
 
-            print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
+        print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
     for epoch in range(max_epochs):
         print(f"Epoch {epoch+1}/{max_epochs}")
