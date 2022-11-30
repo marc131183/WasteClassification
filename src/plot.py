@@ -20,7 +20,7 @@ def lossAccuracyPlot():
     fig, ax = plt.subplots(2, figsize=(7, 10))
 
     ax[0].plot(train_loss, label="Train")
-    ax[0].plot(test_loss, label="Test")
+    ax[0].plot(test_loss, label="Validation")
     ax[0].plot(val_loss, label="On-Site")
     ax[0].axvline(x=len(train_loss) - 10, color="red", label="Early Stopping")
     ax[0].set_yticks(np.arange(0, 11, 1))
@@ -28,7 +28,7 @@ def lossAccuracyPlot():
     ax[0].set_ylabel("Loss")
 
     ax[1].plot(train_acc, label="Train")
-    ax[1].plot(test_acc, label="Test")
+    ax[1].plot(test_acc, label="Validation")
     ax[1].plot(val_acc, label="On-Site")
     ax[1].axvline(x=len(train_acc) - 10, color="red", label="Early Stopping")
     ax[1].legend()
